@@ -37,7 +37,7 @@ common:
 
 	# any special flag that should be passed to the linker when using this
 	# addon, also used for system libraries with -lname
-	# ADDON_LDFLAGS =
+	ADDON_LDFLAGS = -rpath ../../../../addons/ofxRS400/libs/librealsense2/lib/osx
 
 	# linux only, any library that should be included in the project using
 	# pkg-config
@@ -75,12 +75,12 @@ linux64:
 
 	# when parsing the file system looking for sources exclude this for all or
 	# a specific platform
-	ADDON_SOURCES_EXCLUDE = libs/librealsense/platform/%
+	ADDON_SOURCES_EXCLUDE = libs/librealsense2/platform/%
 
 
 	# when parsing the file system looking for include paths exclude this for all or
 	# a specific platform
-	ADDON_INCLUDES_EXCLUDE = libs/librealsense/platform/%
+	ADDON_INCLUDES_EXCLUDE = libs/librealsense2/platform/%
 	ADDON_INCLUDES_EXCLUDE += libs/libusb-1.0/%
 
 linux:
@@ -90,12 +90,12 @@ linux:
 
 	# when parsing the file system looking for sources exclude this for all or
 	# a specific platform
-	ADDON_SOURCES_EXCLUDE = libs/librealsense/platform/%
+	ADDON_SOURCES_EXCLUDE = libs/librealsense2/platform/%
 
 
 	# when parsing the file system looking for include paths exclude this for all or
 	# a specific platform
-	ADDON_INCLUDES_EXCLUDE = libs/librealsense/platform/%
+	ADDON_INCLUDES_EXCLUDE = libs/librealsense2/platform/%
 	ADDON_INCLUDES_EXCLUDE += libs/libusb-1.0/%
 
 msys2:
@@ -104,12 +104,12 @@ msys2:
 
 	# when parsing the file system looking for sources exclude this for all or
 	# a specific platform
-	ADDON_SOURCES_EXCLUDE = libs/librealsense/platform/%
+	ADDON_SOURCES_EXCLUDE = libs/librealsense2/platform/%
 
 
 	# when parsing the file system looking for include paths exclude this for all or
 	# a specific platform
-	ADDON_INCLUDES_EXCLUDE = libs/librealsense/platform/%
+	ADDON_INCLUDES_EXCLUDE = libs/librealsense2/platform/%
 	ADDON_INCLUDES_EXCLUDE += libs/libusb-1.0/%
 
 
@@ -122,7 +122,7 @@ vs:
 	# include search paths, this will be usually parsed from the file system
 	# but if the addon or addon libraries need special search paths they can be
 	# specified here separated by spaces or one per line using +=
-	ADDON_INCLUDES += libs/librealsense/platform/windows
+	ADDON_INCLUDES += libs/librealsense2/platform/windows
 
 	# when parsing the file system looking for include paths exclude this for all or
 	# a specific platform
@@ -134,7 +134,7 @@ linuxarmv6l:
 
 	# when parsing the file system looking for sources exclude this for all or
 	# a specific platform
-	ADDON_SOURCES_EXCLUDE = libs/librealsense/platform/%
+	ADDON_SOURCES_EXCLUDE = libs/librealsense2/platform/%
 
 
 	# when parsing the file system looking for include paths exclude this for all or
