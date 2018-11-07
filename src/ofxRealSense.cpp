@@ -318,7 +318,7 @@ void ofxRealSense2::update() {
     rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
     color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 1.f);
     color_map.set_option(RS2_OPTION_COLOR_SCHEME, 2.f);
-    rs2::frame depth = color_map(data.get_depth_frame()); // Find and colorize the depth data
+    rs2::frame depth = color_map.process(data.get_depth_frame()); // Find and colorize the depth data
     rs2::frame color = data.get_color_frame();            // Find the color data
     rs2::frame infrared = data.get_infrared_frame();
     
@@ -915,7 +915,7 @@ bool ofxRealSenseContext::open(ofxRealSense2& realSense, int id) {
 		return false;
 	}
 
-    cout << "IN CONTEXT TRYING TO OPEN DEVICE: " << id << endl;
+    cout << "IN CONTEXT TRYING TO OPEN DEVICE BY ID: " << id << endl;
     cout << deviceList[id].serial << endl;
     
     realSense.config.enable_stream(RS2_STREAM_COLOR, COLOR_WIDTH, COLOR_HEIGHT, RS2_FORMAT_RGB8, 30);
@@ -936,21 +936,26 @@ bool ofxRealSenseContext::open(ofxRealSense2& realSense, int id) {
 
 bool ofxRealSenseContext::open(ofxRealSense2& realSense, string serial) {
 
-	// rebuild if necessary (aka new kinects plugged in)
-	buildDeviceList();
+    // rebuild if necessary (aka new kinects plugged in)
+    buildDeviceList();
 
-	if(numConnected() >= numTotal()) {
-		ofLogWarning("ofxRealSense2") << "no available devices found";
-		return false;
-	}
+    if(numConnected() >= numTotal()) {
+        ofLogWarning("ofxRealSense2") << "no available devices found";
+        return false;
+    }
 
-	// is the serial available?
-	if(isConnected(serial)) {
-		ofLogWarning("ofxRealSense2") << "device " << serial << " already connected";
-		return false;
-	}
-    
+    // is the serial available?
+    if(isConnected(serial)) {
+        ofLogWarning("ofxRealSense2") << "device " << serial << " already connected";
+        return false;
+    }
+
+    cout << "IN CONTEXT TRYING TO OPEN DEVICE BY SERIAL: " << serial << endl;
+
     int index = getDeviceIndex(serial);
+    realSense.config.enable_stream(RS2_STREAM_COLOR, COLOR_WIDTH, COLOR_HEIGHT, RS2_FORMAT_RGB8, 30);
+    realSense.config.enable_stream(RS2_STREAM_DEPTH, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Z16, 30);
+    realSense.config.enable_stream(RS2_STREAM_INFRARED, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Y8, 30);
     realSense.config.enable_device(serial);
     realSense.profile = realSense.pipe.start(realSense.config);
     
@@ -1024,7 +1029,7 @@ void ofxRealSenseContext::buildDeviceList() {
     if (!device_count)
     {
         cout <<"No device detected. Is it plugged in?\n";
-        return EXIT_SUCCESS;
+        //return EXIT_SUCCESS;
     }
     else{
         cout << "You have " << device_count << " devices" << endl;
