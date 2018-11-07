@@ -88,3 +88,14 @@ Developing ofxRealSense400
 
 Feel free to log bug reports and issues to the openFrameworks Github page:
 https://github.com/BKRLearning/ofxRealSense400
+
+Current Status
+--------------------
+
+* Using librealsense v2.16.4
+* Must call RealSense2::open() with explicit serial number string argument to use more than one device
+* Automatic indexing of devices by ID number does not work when using multiple devices
+* Devices tested:
+  * D415 -- firmware: 05.10.03.00
+  * D435 -- firmware: 05.09.02.00
+

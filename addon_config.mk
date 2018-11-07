@@ -37,7 +37,7 @@ common:
 
 	# any special flag that should be passed to the linker when using this
 	# addon, also used for system libraries with -lname
-	ADDON_LDFLAGS = -rpath ../../../../addons/ofxRS400/libs/librealsense2/lib/osx
+	ADDON_LDFLAGS = -Wl,-rpath=../../../addons/ofxRealSense400/libs/librealsense2/lib/linux64
 
 	# linux only, any library that should be included in the project using
 	# pkg-config
