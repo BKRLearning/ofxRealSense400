@@ -186,6 +186,9 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         void drawIR(const ofPoint& point) const;
         void drawIR(const ofRectangle& rect) const;
     
+        // pointcloud work
+        void generatePointCloud();
+    
         /// get the device id
         /// returns -1 if not connected
         int getDeviceId() const;
@@ -298,6 +301,13 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         rs2::pipeline pipe;
         std::map<int, rs2::frame> frames_per_stream;
         rs2::pipeline_profile profile;
+    
+        rs2::frame depth;
+        rs2::frame color;
+        rs2::frame infrared;
+    
+        rs2::pointcloud pointCloud;
+        rs2::points points;
 
         ofImage colorImage;
         ofImage depthImage;

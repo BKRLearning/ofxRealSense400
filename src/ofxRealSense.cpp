@@ -318,9 +318,9 @@ void ofxRealSense2::update() {
     rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
     color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 1.f);
     color_map.set_option(RS2_OPTION_COLOR_SCHEME, 2.f);
-    rs2::frame depth = color_map.process(data.get_depth_frame()); // Find and colorize the depth data
-    rs2::frame color = data.get_color_frame();            // Find the color data
-    rs2::frame infrared = data.get_infrared_frame();
+    depth = color_map.process(data.get_depth_frame()); // Find and colorize the depth data
+    color = data.get_color_frame();            // Find the color data
+    infrared = data.get_infrared_frame();
     
     //  colorImage.setFromPixels((unsigned char *)color.get_data(), COLOR_WIDTH, COLOR_HEIGHT, OF_IMAGE_COLOR);
     //    cout << "setting colorImage " << endl;
@@ -550,6 +550,19 @@ void ofxRealSense2::drawIR(const ofPoint & point) const{
 //----------------------------------------------------------
 void ofxRealSense2::drawIR(const ofRectangle & rect) const{
     drawIR(rect.x, rect.y, rect.width, rect.height);
+}
+//----------------------------------------------------------
+void ofxRealSense2::generatePointCloud(){
+    if(depth){
+        points = pointCloud.calculate(depth);
+        
+        if (color) {
+            pointCloud.map_to(color);
+        }
+        else if (infrared) {
+            pointCloud.map_to(infrared);
+        }
+    }
 }
 
 //---------------------------------------------------------------------------
