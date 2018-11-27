@@ -188,6 +188,7 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
     
         // pointcloud work
         void generatePointCloud();
+        void drawPointCloud();
     
         /// get the device id
         /// returns -1 if not connected

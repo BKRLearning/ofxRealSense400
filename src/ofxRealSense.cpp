@@ -335,6 +335,7 @@ void ofxRealSense2::update() {
     if(depth) {
         if(depth.get_data())
         {
+//            depthPixelsRaw.setFromPixels((unsigned char *)depth.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
             depthPixels.setFromPixels((unsigned char *)depth.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_COLOR);
             depthTex.loadData(depthPixels);
         }
@@ -349,7 +350,20 @@ void ofxRealSense2::update() {
 
 //------------------------------------
 float ofxRealSense2::getDistanceAt(int x, int y)  const{
-	return depthPixelsRaw[y * width + x];
+    cout << depth.get_timestamp() << endl;
+    rs2::depth_frame temp = depth.as<rs2::depth_frame>();
+//    rs2::depth_frame temp = rs2::depth_frame(depth);
+//    if(ofGetElapsedTimeMillis() > 10000){
+        cout << depth.get_timestamp() << " Innie" << endl;
+        cout << temp.get_timestamp() << " ";
+        cout << "got a cloud" << endl;
+        return temp.get_distance(x, y);
+//    return;
+//    }
+//    else{
+//        return;
+//    }
+//    return depthPixelsRaw[y * width + x];
 }
 
 //------------------------------------
@@ -553,6 +567,19 @@ void ofxRealSense2::drawIR(const ofRectangle & rect) const{
 }
 //----------------------------------------------------------
 void ofxRealSense2::generatePointCloud(){
+    if(depth){
+        points = pointCloud.calculate(depth);
+        
+        if (color) {
+            pointCloud.map_to(color);
+        }
+        else if (infrared) {
+            pointCloud.map_to(infrared);
+        }
+    }
+}
+//----------------------------------------------------------
+void ofxRealSense2::drawPointCloud(){
     if(depth){
         points = pointCloud.calculate(depth);
         
