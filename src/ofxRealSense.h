@@ -35,6 +35,7 @@
 #include "ofMain.h"
 #include "rs.h"
 #include "rs.hpp"
+#include "rsutil.h"
 
 #define COLOR_WIDTH 1280
 #define COLOR_HEIGHT 720
@@ -302,7 +303,9 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         rs2::pipeline pipe;
         std::map<int, rs2::frame> frames_per_stream;
         rs2::pipeline_profile profile;
+        rs2_intrinsics intr;
     
+        rs2::frameset allset;
         rs2::frame depth;
         rs2::frame color;
         rs2::frame infrared;
