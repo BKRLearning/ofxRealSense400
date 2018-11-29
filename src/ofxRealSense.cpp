@@ -316,12 +316,13 @@ void ofxRealSense2::update() {
     // - End handle reconnection
 
     rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+    allset = data;
     color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 1.f);
     color_map.set_option(RS2_OPTION_COLOR_SCHEME, 2.f);
     depth = color_map.process(data.get_depth_frame()); // Find and colorize the depth data
     color = data.get_color_frame();            // Find the color data
     infrared = data.get_infrared_frame();
-    
+    intr = data.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
     //  colorImage.setFromPixels((unsigned char *)color.get_data(), COLOR_WIDTH, COLOR_HEIGHT, OF_IMAGE_COLOR);
     //    cout << "setting colorImage " << endl;
     
@@ -335,6 +336,7 @@ void ofxRealSense2::update() {
     if(depth) {
         if(depth.get_data())
         {
+//            depthPixelsRaw.setFromPixels((unsigned char *)depth.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
             depthPixels.setFromPixels((unsigned char *)depth.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_COLOR);
             depthTex.loadData(depthPixels);
         }
@@ -349,7 +351,11 @@ void ofxRealSense2::update() {
 
 //------------------------------------
 float ofxRealSense2::getDistanceAt(int x, int y)  const{
-	return depthPixelsRaw[y * width + x];
+    
+    rs2::depth_frame temp = allset.get_depth_frame();
+    return temp.get_distance(x, y);
+
+//    return depthPixelsRaw[y * width + x];
 }
 
 //------------------------------------
@@ -364,9 +370,12 @@ ofVec3f ofxRealSense2::getWorldCoordinateAt(int x, int y)  const{
 
 //------------------------------------
 ofVec3f ofxRealSense2::getWorldCoordinateAt(float cx, float cy, float wz)  const{
-	double wx, wy;
+    float point[3];
+    float pixel[2]{ cx, cy };
+    
+    rs2_deproject_pixel_to_point(point, &intr, pixel, wz);
 //    freenect_camera_to_world(realSenseDevice, cx, cy, wz, &wx, &wy);
-	return ofVec3f(wx, wy, wz);
+	return ofVec3f(point[0], point[1], point[2]);
 }
 
 //------------------------------------
@@ -377,7 +386,7 @@ ofColor ofxRealSense2::getColorAt(int x, int y)  const{
 	c.g = videoPixels[index + (videoBytesPerPixel-1)/2];
 	c.b = videoPixels[index + (videoBytesPerPixel-1)];
 	c.a = 255;
-
+    
 	return c;
 }
 
@@ -553,6 +562,19 @@ void ofxRealSense2::drawIR(const ofRectangle & rect) const{
 }
 //----------------------------------------------------------
 void ofxRealSense2::generatePointCloud(){
+    if(depth){
+        points = pointCloud.calculate(depth);
+        
+        if (color) {
+            pointCloud.map_to(color);
+        }
+        else if (infrared) {
+            pointCloud.map_to(infrared);
+        }
+    }
+}
+//----------------------------------------------------------
+void ofxRealSense2::drawPointCloud(){
     if(depth){
         points = pointCloud.calculate(depth);
         
