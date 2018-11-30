@@ -189,7 +189,7 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
     
         // pointcloud work
         void generatePointCloud();
-        void drawPointCloud();
+        void drawPointCloud(float width, float height, rs2::points& points);
     
         /// get the device id
         /// returns -1 if not connected
@@ -320,7 +320,7 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
 /// \class ofxRealSenseContext
 ///
-/// wrapper for the freenect context
+/// wrapper for the realsense context
 ///
 /// do not use this directly
 ///

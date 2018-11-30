@@ -110,14 +110,11 @@ bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
     }
 
     if(!realSenseContext.isInited()) {
-//        pipe.start(config);
 
   		if(!realSenseContext.init()) {
   			return false;
   		}
   	}
-    
-//    pipe.start(config);
 
     bGrabberInited = true;
     return bGrabberInited;
@@ -172,16 +169,6 @@ bool ofxRealSense2::open(int deviceIndex) {
     bGotDataDepth = false;
     bFirstUpdate = true;
 
-    // will need to find analogue
-
-    /*
-    freenect_set_user(kinectDevice, this);
-    freenect_set_depth_buffer(kinectDevice, depthPixelsRawBack.getData());
-    freenect_set_video_buffer(kinectDevice, videoPixelsBack.getData());
-    freenect_set_depth_callback(kinectDevice, &grabDepthFrame);
-    freenect_set_video_callback(kinectDevice, &grabVideoFrame);
-    */
-
     startThread(); // blocking, not verbose
 
     return true;
@@ -202,11 +189,6 @@ bool ofxRealSense2::open(string serial) {
 	bGotDataVideo = false;
     bGotDataDepth = false;
 	bFirstUpdate = true;
-
-  // will need to figure out analogue
-	// freenect_set_user(kinectDevice, this);
-	// freenect_set_depth_callback(kinectDevice, &grabDepthFrame);
-	// freenect_set_video_callback(kinectDevice, &grabVideoFrame);
 
 	startThread(); // blocking, not verbose
 
@@ -316,15 +298,20 @@ void ofxRealSense2::update() {
     // - End handle reconnection
 
     rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
-    allset = data;
+    
+    // aligns the depth and color frame
+    rs2_stream align_to = RS2_STREAM_COLOR;
+    rs2::align align(align_to);
+    rs2::frameset processed = align.process(data);
+    
+    allset = processed;
+    
     color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 1.f);
     color_map.set_option(RS2_OPTION_COLOR_SCHEME, 2.f);
     depth = color_map.process(data.get_depth_frame()); // Find and colorize the depth data
     color = data.get_color_frame();            // Find the color data
     infrared = data.get_infrared_frame();
     intr = data.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
-    //  colorImage.setFromPixels((unsigned char *)color.get_data(), COLOR_WIDTH, COLOR_HEIGHT, OF_IMAGE_COLOR);
-    //    cout << "setting colorImage " << endl;
     
     if(color){
         if(color.get_data()){
@@ -374,7 +361,6 @@ ofVec3f ofxRealSense2::getWorldCoordinateAt(float cx, float cy, float wz)  const
     float pixel[2]{ cx, cy };
     
     rs2_deproject_pixel_to_point(point, &intr, pixel, wz);
-//    freenect_camera_to_world(realSenseDevice, cx, cy, wz, &wx, &wy);
 	return ofVec3f(point[0], point[1], point[2]);
 }
 
@@ -574,7 +560,7 @@ void ofxRealSense2::generatePointCloud(){
     }
 }
 //----------------------------------------------------------
-void ofxRealSense2::drawPointCloud(){
+void ofxRealSense2::drawPointCloud(float width, float height, rs2::points& points){
     if(depth){
         points = pointCloud.calculate(depth);
         
