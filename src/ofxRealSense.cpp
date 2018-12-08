@@ -67,7 +67,10 @@ ofxRealSense2::ofxRealSense2(){
 
   pixelFormat = OF_PIXELS_RGB;
 
-  setDepthClipping();
+  //setDepthClipping();
+
+  nearClipping = 0.0;
+  farClipping = 6.0;
 
 }
 
@@ -91,7 +94,7 @@ bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
 
     if(bUseDepth){
         config.enable_stream(RS2_STREAM_DEPTH, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Z16, 30);
-        depthImage.allocate(DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_COLOR);
+        depthImage.allocate(DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
         depthPixels.set(0);
         distancePixels.set(0);
     }
@@ -306,7 +309,7 @@ void ofxRealSense2::update() {
     
     allset = processed;
     
-    color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 1.f);
+    //color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 1.f);
     color_map.set_option(RS2_OPTION_COLOR_SCHEME, 2.f);
     depth = color_map.process(data.get_depth_frame()); // Find and colorize the depth data
     color = data.get_color_frame();            // Find the color data
@@ -456,11 +459,37 @@ bool ofxRealSense2::isDepthNearValueWhite() const{
 	return bNearWhite;
 }
 
-//---------------------------------------------------------------------------
+/*---------------------------------------------------------------------------
 void ofxRealSense2::setDepthClipping(float nearClip, float farClip) {
 	nearClipping = nearClip;
 	farClipping = farClip;
 	updateDepthLookupTable();
+}*/
+
+//---------------------------------------------------------------------------
+float ofxRealSense2::getClippingOptionMin() const{
+
+    //auto depthSensor = profile.get_device().first<rs2::depth_sensor>();
+    auto range = color_map.get_option_range(RS2_OPTION_MIN_DISTANCE);
+
+    return range.min;
+}
+
+//---------------------------------------------------------------------------
+float ofxRealSense2::getClippingOptionMax() const{
+
+    //auto depthSensor = profile.get_device().first<rs2::depth_sensor>();
+    auto range = color_map.get_option_range(RS2_OPTION_MAX_DISTANCE);
+
+    return range.max;
+}
+
+float ofxRealSense2::getClippingOptionStep() const{
+
+    //auto depthSensor = profile.get_device().first<rs2::depth_sensor>();
+    auto range = color_map.get_option_range(RS2_OPTION_MAX_DISTANCE); //same for both
+
+    return range.step;
 }
 
 //---------------------------------------------------------------------------
@@ -473,7 +502,30 @@ float ofxRealSense2::getFarClipping() const{
     return farClipping;
 }
 
-//------------------------------------
+//---------------------------------------------------------------------------
+void ofxRealSense2::setNearClipping(float value) {
+
+    if (value < farClipping) {
+        //auto depthSensor = profile.get_device().first<rs2::depth_sensor>();
+        color_map.set_option(RS2_OPTION_MIN_DISTANCE, value);
+        nearClipping = value;
+    } else {
+        ofLogWarning("ofxRealSense2") << "Tried to set nearClipping > farClipping";
+    }
+}
+
+//---------------------------------------------------------------------------
+void ofxRealSense2::setFarClipping(float value) {
+
+    if (value > nearClipping) {
+        //auto depthSensor = profile.get_device().first<rs2::depth_sensor>();
+        color_map.set_option(RS2_OPTION_MAX_DISTANCE, value);
+    } else {
+        ofLogWarning("ofxRealSense2") << "Tried to set farClipping < nearClipping";
+    }
+}
+
+//---------------------------------------------------------------------------
 void ofxRealSense2::setUseTexture(bool bUse){
 	bUseTexture = bUse;
 }

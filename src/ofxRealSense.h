@@ -156,14 +156,38 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
         // set the clipping planes for the depth calculations in millimeters
 
-      	// these are used for the depth value (12bit) -> grayscale (1 byte) conversion
-      	// ie setting a short range will give you greater sensitivity from 0-255
+        // these are used for the depth value (12bit) -> grayscale (1 byte) conversion
+        // ie setting a short range will give you greater sensitivity from 0-255
 
-      	// default is 50cm - 4m
-      	// note: you won't get any data < 50cm and distances > 4m start to get noisy
-      	void setDepthClipping(float nearClip=500, float farClip=4000);
-      	float getNearClipping() const;
-      	float getFarClipping() const;
+        // default is 50cm - 4m
+        // note: you won't get any data < 50cm and distances > 4m start to get noisy
+        //void setDepthClipping(float nearClip=500, float farClip=4000);
+
+        /*******************************************************
+        * ===================================================
+        *                   NEW CLIPPING STUFF
+        *           Implementation -- lines 470 - 536 in .cpp
+        * ===================================================
+        * *****************************************************/
+
+        //Get values needed to set up clipping controls
+        float getClippingOptionMin() const;
+        float getClippingOptionMax() const;
+        float getClippingOptionStep() const;
+
+        //Get the current values
+        float getNearClipping() const;
+        float getFarClipping() const;
+
+        //Setting individually since we have separate controls
+        void setNearClipping(float value);
+        void setFarClipping(float value);
+
+        /******************************************************
+         * ==================================================
+         *                 END NEW CLIPPING STUFF
+         * ==================================================
+         * ****************************************************/
 
         /// enable/disable frame loading into textures on update()
         void setUseTexture(bool bUse);
