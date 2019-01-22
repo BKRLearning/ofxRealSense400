@@ -119,6 +119,10 @@ bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
   		}
   	}
 
+    color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0.f);
+    color_map.set_option(RS2_OPTION_VISUAL_PRESET, 3.f);
+    color_map.set_option(RS2_OPTION_COLOR_SCHEME, 2.f);
+
     bGrabberInited = true;
     return bGrabberInited;
 }
@@ -310,7 +314,8 @@ void ofxRealSense2::update() {
     allset = processed;
     
     //color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 1.f);
-    color_map.set_option(RS2_OPTION_COLOR_SCHEME, 2.f);
+    //color_map.set_option(RS2_OPTION_MAX_DISTANCE, 2.7f); //TESTING
+
     depth = color_map.process(data.get_depth_frame()); // Find and colorize the depth data
     color = data.get_color_frame();            // Find the color data
     infrared = data.get_infrared_frame();
