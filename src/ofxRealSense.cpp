@@ -525,6 +525,7 @@ void ofxRealSense2::setFarClipping(float value) {
     if (value > nearClipping) {
         //auto depthSensor = profile.get_device().first<rs2::depth_sensor>();
         color_map.set_option(RS2_OPTION_MAX_DISTANCE, value);
+        farClipping = value;
     } else {
         ofLogWarning("ofxRealSense2") << "Tried to set farClipping < nearClipping";
     }
