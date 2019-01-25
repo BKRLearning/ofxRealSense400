@@ -51,6 +51,7 @@
 
 
 #include "ofxBase3DVideo.h"
+#include "Filter.h"
 
 class ofxRealSenseContext;
 
@@ -62,6 +63,8 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         virtual ~ofxRealSense2();
 
         bool init(bool infrared=false, bool video=true, bool texture=true);
+
+        void initFilters();
 
         void clear();
 
@@ -101,7 +104,8 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
         static float getDepthScale(rs2::device device);
 
-        static void setHighDensityDepth(const rs2::pipeline_profile& profile);
+        static void setHighDensityPreset(const rs2::pipeline_profile& profile);
+        void setHighAccuracyPreset();
 
         static void removeBackground(ofImage& dstFrame, const rs2::depth_frame& srcFrame,
                 float depthScale, float clippingDistance);
@@ -188,6 +192,13 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
          *                 END NEW CLIPPING STUFF
          * ==================================================
          * ****************************************************/
+
+        std::vector<Filter> filters;
+
+        rs2::frame_queue originalDepth;
+        rs2::frame_queue filteredDepth;
+
+        //PostProcessingThread filterThread;
 
         /// enable/disable frame loading into textures on update()
         void setUseTexture(bool bUse);
@@ -287,6 +298,7 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 //    private:
 
         friend class ofxRealSenseContext;
+        friend class PostProcessingThread;
 
         // global statics shared between realsense intances
         static ofxRealSenseContext realSenseContext;
@@ -435,10 +447,10 @@ public:
 	rs2::context* getContext() {return realSenseContext;}
 
 	// for auto-enumeration
-    struct RealSensePair{
-		string serial;	///< unique serial number
-		int id;			///< freenect bus id
-    };
+ struct RealSensePair{
+    string serial;	///< unique serial number
+    int id;			///< freenect bus id
+ };
 
 //private:
 
@@ -449,3 +461,5 @@ public:
 	std::map<int,ofxRealSense2*> realSenses;   ///< the connected kinects
 //    rs2::error* e;
 };
+
+

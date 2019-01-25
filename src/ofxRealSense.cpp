@@ -71,11 +71,11 @@ ofxRealSense2::ofxRealSense2(){
 
   nearClipping = 0.0;
   farClipping = 6.0;
-
 }
 
 ofxRealSense2::~ofxRealSense2(){
   // close? clear?
+  close();
 }
 
 bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
@@ -97,6 +97,7 @@ bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
         depthImage.allocate(DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
         depthPixels.set(0);
         distancePixels.set(0);
+        initFilters();
     }
 
     if(bUseInfrared) {
@@ -147,6 +148,27 @@ void ofxRealSense2::clear() {
 
 	bGrabberInited = false;
 
+}
+
+void ofxRealSense2::initFilters() {
+    rs2::decimation_filter dec_filter;  // Decimation - reduces depth frame density
+    filters.emplace_back(dec_filter);
+
+    //FROM DEV BRANCH -- THIS SETS MIN AND MAX DISTANCE AT SAME TIME
+    //rs2::threshold_filter thr_filter;   // Threshold  - removes values outside recommended range
+    //filters.emplace_back(thr_filter);
+
+    //rs2::disparity_transform depth_to_disparity(true);
+    //filters.emplace_back(depth_to_disparity, false);
+
+    rs2::spatial_filter spat_filter;    // Spatial    - edge-preserving spatial smoothing
+    filters.emplace_back(spat_filter);
+
+    rs2::temporal_filter temp_filter; // Temporal   - reduces temporal noise
+    filters.emplace_back(temp_filter);
+
+    rs2::hole_filling_filter hole_filter; //Hole Filling
+    filters.emplace_back(hole_filter);
 }
 
 void ofxRealSense2::setRegistration(bool bUseRegistration) {
@@ -304,19 +326,26 @@ void ofxRealSense2::update() {
 
     // - End handle reconnection
 
-    rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+    //rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
     
     // aligns the depth and color frame
-    rs2_stream align_to = RS2_STREAM_COLOR;
-    rs2::align align(align_to);
-    rs2::frameset processed = align.process(data);
+    //rs2_stream align_to = RS2_STREAM_COLOR;
+    //rs2::align align(align_to);
+    //rs2::frameset processed = align.process(data);
     
-    allset = processed;
+    //allset = processed;
     
     //color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 1.f);
     //color_map.set_option(RS2_OPTION_MAX_DISTANCE, 2.7f); //TESTING
 
-    depth = color_map.process(data.get_depth_frame()); // Find and colorize the depth data
+    rs2::frame f;
+    if (filteredDepth.poll_for_frame(&f))  // Try to take the depth and points from the queue
+    {
+        depth = color_map.process(f);     // Colorize the depth frame with a color map
+    }
+
+    //depth = color_map.process(data.get_depth_frame()); // Find and colorize the depth data
+    /*
     color = data.get_color_frame();            // Find the color data
     infrared = data.get_infrared_frame();
     intr = data.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
@@ -326,7 +355,7 @@ void ofxRealSense2::update() {
             videoPixels.setFromPixels((unsigned char *)color.get_data(), COLOR_WIDTH, COLOR_HEIGHT, OF_IMAGE_COLOR);
             videoTex.loadData(videoPixels);
         }
-    }
+    }*/
     
     if(depth) {
         if(depth.get_data())
@@ -337,11 +366,12 @@ void ofxRealSense2::update() {
         }
     }
 
+    /*
     if(infrared) {
         infraredPixels.setFromPixels((unsigned char *)infrared.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
         infraredTex.loadData(infraredPixels);
     }
-    
+    */
 }
 
 //------------------------------------
@@ -464,6 +494,11 @@ bool ofxRealSense2::isDepthNearValueWhite() const{
 	return bNearWhite;
 }
 
+void ofxRealSense2::setHighAccuracyPreset() {
+    auto sensor = profile.get_device().first<rs2::depth_sensor>();
+    std::cout << "Setting Depth Preset: " << std::string(sensor.get_option_value_description(RS2_OPTION_VISUAL_PRESET, 3.0f)) << endl;
+    sensor.set_option(RS2_OPTION_VISUAL_PRESET, 3.0f);
+}
 /*---------------------------------------------------------------------------
 void ofxRealSense2::setDepthClipping(float nearClip, float farClip) {
 	nearClipping = nearClip;
@@ -753,31 +788,44 @@ void ofxRealSense2::grabVideoFrame(rs2::device *dev, void *video, uint32_t times
 }
 
 //---------------------------------------------------------------------------
-void ofxRealSense2::threadedFunction(){
+void ofxRealSense2::threadedFunction() {
+    while (isThreadRunning()) {
 
-  // is there an analogue ? Is this the config ?
-	// freenect_frame_mode videoMode = freenect_find_video_mode(FREENECT_RESOLUTION_MEDIUM, bIsVideoInfrared?FREENECT_VIDEO_IR_8BIT:FREENECT_VIDEO_RGB);
-	// freenect_set_video_mode(kinectDevice, videoMode);
-	// freenect_frame_mode depthMode = freenect_find_depth_mode(FREENECT_RESOLUTION_MEDIUM, bUseRegistration?FREENECT_DEPTH_REGISTERED:FREENECT_DEPTH_MM);
-	// freenect_set_depth_mode(kinectDevice, depthMode);
+        rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
+        rs2::frame depth_frame = data.get_depth_frame(); //Take the depth frame from the frameset
+        if (!depth_frame) // Should not happen but if the pipeline is configured differently
+            return;       //  it might not provide depth and we don't want to crash
 
-	ofLogVerbose("ofxRealSense2") << "device " << deviceId << " " << serial << " connection opened";
+        rs2::frame filtered = depth_frame; // Does not copy the frame, only adds a reference
 
-  // is there an analogue ? is this the pipeline start?
-	// freenect_start_depth(kinectDevice);
-	if(bGrabVideo) {
-    // is there an analogue ? is this the pipeline start?
-		// freenect_start_video(kinectDevice);
-	}
+        //bool revert_disparity = false;
+        for (auto&& filter : filters)
+        {
+            if (filter.is_enabled)
+            {
+                filtered = filter.filterBlock.process(filtered);
+                /*
+                if (filter.filter_name == "Disparity")
+                {
+                    revert_disparity = true;
+                }*/
+            }
+        }
+        /*
+        if (revert_disparity)
+        {
+            filtered = disparity_to_depth.process(filtered);
+        }*/
 
+        // Push filtered & original data to their respective queues
+        // Note, pushing to two different queues might cause the application to display
+        //  original and filtered pointclouds from different depth frames
+        //  To make sure they are synchronized you need to push them together or add some
+        //  synchronization mechanisms
+        filteredDepth.enqueue(filtered);
+        //originalData.enqueue(depth_frame);
 
-  // is there an analogue to this ?
-	// freenect_stop_depth(kinectDevice);
-	// freenect_stop_video(kinectDevice);
-
-
-  realSenseContext.close(*this);
-	ofLogVerbose("ofxRealSense2") << "device " << deviceId << " connection closed";
+    }
 }
 
 // //---------------------------------------------------------------------------
@@ -1516,3 +1564,27 @@ string ofxRealSenseContext::nextAvailableSerial() {
 }
 
 
+/*******************************************************
+* ===================================================
+*                   POST-PROCESSING THREAD
+* ===================================================
+* *****************************************************/
+Filter::Filter(rs2::processing_block& filter) :
+    filterBlock(filter),
+    is_enabled(true)
+{
+
+}
+
+/*
+void PostProcessingThread::setup() {
+    frameReady = false;
+    return;
+}
+
+void PostProcessingThread::threadedFunction() {
+}
+
+void PostProcessingThread::update() {
+    return;
+}*/
