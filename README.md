@@ -99,3 +99,19 @@ Current Status
   * D415 -- firmware: 05.10.03.00
   * D435 -- firmware: 05.09.02.00
 
+Changes in Post-Proc Branch
+--------------------
+
+* Using colormap options to set higher resolution clipping clipping depths
+* Filter class to encapsulate an rs2 processing block
+* Separate thread with frame queues for running filters on depth data
+* Filters currently enabled:
+  * Decimation
+  * Spatial
+  * Temporal
+  * Hole-Filling
+
+Before Merge
+--------------------
+* Frame queues for rgb and infrared streams
+* Filter class methods for changing params
