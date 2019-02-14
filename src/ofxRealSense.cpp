@@ -60,7 +60,7 @@ ofxRealSense2::ofxRealSense2(){
   timeSinceOpen = 0;
   bGotDataVideo = false;
   bGotDataDepth = false;
-    bFirstUpdate = true;
+  bFirstUpdate = true;
 
   bUseRegistration = false;
   bNearWhite = true;
@@ -81,7 +81,7 @@ ofxRealSense2::~ofxRealSense2(){
 bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
 
     bIsVideoInfrared = infrared;
-  	bGrabVideo = video;
+    bGrabVideo = video;
     bUseTexture = texture;
 
     // set configuration
@@ -89,12 +89,12 @@ bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
         config.enable_stream(RS2_STREAM_COLOR, COLOR_WIDTH, COLOR_HEIGHT, RS2_FORMAT_RGB8, 30);
         colorImage.allocate(COLOR_WIDTH, COLOR_HEIGHT, OF_IMAGE_COLOR);
         videoPixels.set(0);
-	    videoPixelsBack.set(0);
+        videoPixelsBack.set(0);
     }
 
     if(bUseDepth){
         config.enable_stream(RS2_STREAM_DEPTH, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Z16, 30);
-        depthImage.allocate(DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
+        depthImage.allocate(DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_COLOR);
         depthPixels.set(0);
         distancePixels.set(0);
         initFilters();
@@ -115,10 +115,10 @@ bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
 
     if(!realSenseContext.isInited()) {
 
-  		if(!realSenseContext.init()) {
-  			return false;
-  		}
-  	}
+        if(!realSenseContext.init()) {
+            return false;
+        }
+    }
 
     color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0.f);
     color_map.set_option(RS2_OPTION_VISUAL_PRESET, 3.f);
@@ -129,24 +129,24 @@ bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
 }
 
 void ofxRealSense2::clear() {
-  if(isConnected()) {
-		ofLogWarning("ofxRealSense2") << "clear(): do not call clear while ofxRealSense2 is running!";
-		return;
-	}
+    if(isConnected()) {
+        ofLogWarning("ofxRealSense2") << "clear(): do not call clear while ofxRealSense2 is running!";
+        return;
+    }
 
-	depthPixelsRaw.clear();
-	depthPixelsRawBack.clear();
+    depthPixelsRaw.clear();
+    depthPixelsRawBack.clear();
 
-	videoPixels.clear();
-	videoPixelsBack.clear();
+    videoPixels.clear();
+    videoPixelsBack.clear();
 
-	depthPixels.clear();
-	distancePixels.clear();
+    depthPixels.clear();
+    distancePixels.clear();
 
-	depthTex.clear();
-	videoTex.clear();
+    depthTex.clear();
+    videoTex.clear();
 
-	bGrabberInited = false;
+    bGrabberInited = false;
 
 }
 
@@ -154,10 +154,7 @@ void ofxRealSense2::initFilters() {
     rs2::decimation_filter dec_filter;  // Decimation - reduces depth frame density
     filters.emplace_back(dec_filter);
 
-    //FROM DEV BRANCH -- THIS SETS MIN AND MAX DISTANCE AT SAME TIME
-    //rs2::threshold_filter thr_filter;   // Threshold  - removes values outside recommended range
-    //filters.emplace_back(thr_filter);
-
+    //complicates the filter logic and doesn't seem useful
     //rs2::disparity_transform depth_to_disparity(true);
     //filters.emplace_back(depth_to_disparity, false);
 
@@ -204,91 +201,114 @@ bool ofxRealSense2::open(int deviceIndex) {
 }
 
 bool ofxRealSense2::open(string serial) {
-	if(!bGrabberInited) {
+    if(!bGrabberInited) {
         ofLogVerbose("ofxRealSense") << "open(): cannot open, init not called";
-		return false;
-	}
+        return false;
+    }
 
-	if(!realSenseContext.open(*this, serial)) {
-		return false;
-	}
+    if(!realSenseContext.open(*this, serial)) {
+        return false;
+    }
 
-	lastDeviceIndex = realSenseContext.getDeviceIndex(serial);
-	timeSinceOpen = ofGetElapsedTimef();
-	bGotDataVideo = false;
+    lastDeviceIndex = realSenseContext.getDeviceIndex(serial);
+    timeSinceOpen = ofGetElapsedTimef();
+    bGotDataVideo = false;
     bGotDataDepth = false;
-	bFirstUpdate = true;
+    bFirstUpdate = true;
 
-	startThread(); // blocking, not verbose
+    startThread(); // blocking, not verbose
 
-	return true;
+    return true;
+}
+
+bool ofxRealSense2::openFromFile(string filename) {
+    if(!bGrabberInited) {
+        ofLogVerbose("ofxRealSense") << "open(): cannot open, init not called";
+        return false;
+    }
+
+    if(!realSenseContext.openFromFile(*this, filename)) {
+        return false;
+    }
+
+    lastDeviceIndex = realSenseContext.getDeviceIndex(serial);
+    timeSinceOpen = ofGetElapsedTimef();
+    bGotDataVideo = false;
+    bGotDataDepth = false;
+    bFirstUpdate = true;
+
+    startThread(); // blocking, not verbose
+
+    return true;
 }
 
 void ofxRealSense2::close() {
-	if(isThreadRunning()) {
-		stopThread();
-		ofSleepMillis(10);
-		waitForThread(false,5000);
-	}
+    if(isThreadRunning()) {
+        stopThread();
+        ofSleepMillis(10);
+        waitForThread(false,5000);
+    }
 
-	deviceId = -1;
-	serial = "";
-	bIsFrameNewVideo = false;
-	bNeedsUpdateVideo = false;
-	bIsFrameNewDepth = false;
-	bNeedsUpdateDepth = false;
+    deviceId = -1;
+    serial = "";
+    bIsFrameNewVideo = false;
+    bNeedsUpdateVideo = false;
+    bIsFrameNewDepth = false;
+    bNeedsUpdateDepth = false;
 }
 
 //---------------------------------------------------------------------------
 bool ofxRealSense2::isConnected() const{
-	return isThreadRunning();
+    return isThreadRunning();
 }
 
 //---------------------------------------------------------------------------
 bool ofxRealSense2::isInitialized() const{
-	return realSenseContext.isInited();
+    return realSenseContext.isInited();
 }
 
 //--------------------------------------------------------------------
 bool ofxRealSense2::isFrameNew()  const{
-	return isFrameNewVideo() || isFrameNewDepth();
+    return isFrameNewVideo() || isFrameNewDepth();
 }
 
 //--------------------------------------------------------------------
 bool ofxRealSense2::isFrameNewVideo() const{
-	return bIsFrameNewVideo;
+    return bIsFrameNewVideo;
 }
 
 //--------------------------------------------------------------------
 bool ofxRealSense2::isFrameNewDepth() const{
-	return bIsFrameNewDepth;
+    return bIsFrameNewDepth;
 }
 
 //--------------------------------------------------------------------
 bool ofxRealSense2::setPixelFormat(ofPixelFormat pixelFormat){
-	if(!bIsVideoInfrared && pixelFormat==OF_PIXELS_RGB){
-		return true;
-	}else if(pixelFormat == OF_PIXELS_GRAY){
-		return true;
-	}else{
-		return false;
-	}
+    if(!bIsVideoInfrared && pixelFormat==OF_PIXELS_RGB){
+        return true;
+    }else if(pixelFormat == OF_PIXELS_GRAY){
+        return true;
+    }else{
+        return false;
+    }
 }
 
 //--------------------------------------------------------------------
 ofPixelFormat ofxRealSense2::getPixelFormat() const{
-	if(!bIsVideoInfrared){
-		return OF_PIXELS_RGB;
-	}else{
-		return OF_PIXELS_GRAY;
-	}
+    if(!bIsVideoInfrared){
+        return OF_PIXELS_RGB;
+    }else{
+        return OF_PIXELS_GRAY;
+    }
 }
 
 //----------------------------------------------------------
 void ofxRealSense2::update() {
-	if(!bGrabberInited) {
-		return;
-	}
+    if(!bGrabberInited) {
+        return;
+    }
+
+    bIsFrameNewDepth = false;
 
     // - Start handle reconnection
 
@@ -334,49 +354,42 @@ void ofxRealSense2::update() {
     //rs2::frameset processed = align.process(data);
     
     //allset = processed;
-    
-    //color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 1.f);
-    //color_map.set_option(RS2_OPTION_MAX_DISTANCE, 2.7f); //TESTING
 
-    rs2::frame f;
-    if (filteredDepth.poll_for_frame(&f))  // Try to take the depth and points from the queue
-    {
-        depth = color_map.process(f);     // Colorize the depth frame with a color map
-    }
+    //intr = data.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
 
-    //depth = color_map.process(data.get_depth_frame()); // Find and colorize the depth data
-    /*
-    color = data.get_color_frame();            // Find the color data
-    infrared = data.get_infrared_frame();
-    intr = data.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
-    
-    if(color){
-        if(color.get_data()){
+    if(videoQueue.poll_for_frame(&color)) {
+        if(color.get_data()) {
             videoPixels.setFromPixels((unsigned char *)color.get_data(), COLOR_WIDTH, COLOR_HEIGHT, OF_IMAGE_COLOR);
             videoTex.loadData(videoPixels);
         }
-    }*/
-    
+    }
+
+    rs2::frame f;
+    if (filteredDepthQueue.poll_for_frame(&f)) { // Try to take the depth from the queue
+        depth = color_map.process(f);     // Colorize the depth frame with a color map
+    }
+
     if(depth) {
-        if(depth.get_data())
-        {
-//            depthPixelsRaw.setFromPixels((unsigned char *)depth.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
+        if (depth.get_data()) {
+//          depthPixelsRaw.setFromPixels((unsigned char *)depth.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
             depthPixels.setFromPixels((unsigned char *)depth.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_COLOR);
             depthTex.loadData(depthPixels);
+            bIsFrameNewDepth = true;
         }
     }
 
-    /*
-    if(infrared) {
-        infraredPixels.setFromPixels((unsigned char *)infrared.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
-        infraredTex.loadData(infraredPixels);
+    if(infraredQueue.poll_for_frame(&infrared)) {
+        if (infrared.get_data()) {
+            infraredPixels.setFromPixels((unsigned char *)infrared.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
+            infraredTex.loadData(infraredPixels);
+        }
     }
-    */
+
 }
 
 //------------------------------------
 float ofxRealSense2::getDistanceAt(int x, int y)  const{
-    
+
     rs2::depth_frame temp = allset.get_depth_frame();
     return temp.get_distance(x, y);
 
@@ -385,113 +398,113 @@ float ofxRealSense2::getDistanceAt(int x, int y)  const{
 
 //------------------------------------
 float ofxRealSense2::getDistanceAt(const ofPoint & p)  const{
-	return getDistanceAt(p.x, p.y);
+    return getDistanceAt(p.x, p.y);
 }
 
 //------------------------------------
 ofVec3f ofxRealSense2::getWorldCoordinateAt(int x, int y)  const{
-	return getWorldCoordinateAt(x, y, getDistanceAt(x, y));
+    return getWorldCoordinateAt(x, y, getDistanceAt(x, y));
 }
 
 //------------------------------------
 ofVec3f ofxRealSense2::getWorldCoordinateAt(float cx, float cy, float wz)  const{
     float point[3];
     float pixel[2]{ cx, cy };
-    
+
     rs2_deproject_pixel_to_point(point, &intr, pixel, wz);
-	return ofVec3f(point[0], point[1], point[2]);
+    return ofVec3f(point[0], point[1], point[2]);
 }
 
 //------------------------------------
 ofColor ofxRealSense2::getColorAt(int x, int y)  const{
-	int index = (y * width + x) * videoBytesPerPixel;
-	ofColor c;
-	c.r = videoPixels[index + 0];
-	c.g = videoPixels[index + (videoBytesPerPixel-1)/2];
-	c.b = videoPixels[index + (videoBytesPerPixel-1)];
-	c.a = 255;
-    
-	return c;
+    int index = (y * width + x) * videoBytesPerPixel;
+    ofColor c;
+    c.r = videoPixels[index + 0];
+    c.g = videoPixels[index + (videoBytesPerPixel-1)/2];
+    c.b = videoPixels[index + (videoBytesPerPixel-1)];
+    c.a = 255;
+
+    return c;
 }
 
 //------------------------------------
 ofColor ofxRealSense2::getColorAt(const ofPoint & p)  const{
-	return getColorAt(p.x, p.y);
+    return getColorAt(p.x, p.y);
 }
 
 ofPixels & ofxRealSense2::getPixels(){
-	return videoPixels;
+    return videoPixels;
 }
 
 ofPixels & ofxRealSense2::getDepthPixels(){
-	return depthPixels;
+    return depthPixels;
 }
 
 ofShortPixels & ofxRealSense2::getRawDepthPixels(){
-	return depthPixelsRaw;
+    return depthPixelsRaw;
 }
 
 ofFloatPixels & ofxRealSense2::getDistancePixels(){
-	return distancePixels;
+    return distancePixels;
 }
 
 const ofPixels & ofxRealSense2::getPixels() const{
-	return videoPixels;
+    return videoPixels;
 }
 
 const ofPixels & ofxRealSense2::getDepthPixels() const{
-	return depthPixels;
+    return depthPixels;
 }
 
 const ofShortPixels & ofxRealSense2::getRawDepthPixels() const{
-	return depthPixelsRaw;
+    return depthPixelsRaw;
 }
 
 const ofFloatPixels & ofxRealSense2::getDistancePixels() const{
-	return distancePixels;
+    return distancePixels;
 }
 
 //------------------------------------
 ofTexture& ofxRealSense2::getTexture(){
-	if(!videoTex.isAllocated()){
-		ofLogWarning("ofxRealSense2") << "getTexture(): device " << deviceId << " video texture not allocated";
-	}
-	return videoTex;
+    if(!videoTex.isAllocated()){
+        ofLogWarning("ofxRealSense2") << "getTexture(): device " << deviceId << " video texture not allocated";
+    }
+    return videoTex;
 }
 
 //---------------------------------------------------------------------------
 ofTexture& ofxRealSense2::getDepthTexture(){
-	if(!depthTex.isAllocated()){
-		ofLogWarning("ofxRealSense2") << "getDepthTexture(): device " << deviceId << " depth texture not allocated";
-	}
-	return depthTex;
+    if(!depthTex.isAllocated()){
+        ofLogWarning("ofxRealSense2") << "getDepthTexture(): device " << deviceId << " depth texture not allocated";
+    }
+    return depthTex;
 }
 
 //------------------------------------
 const ofTexture& ofxRealSense2::getTexture() const{
-	if(!videoTex.isAllocated()){
-		ofLogWarning("ofxRealSense2") << "getTexture(): device " << deviceId << " video texture not allocated";
-	}
-	return videoTex;
+    if(!videoTex.isAllocated()){
+        ofLogWarning("ofxRealSense2") << "getTexture(): device " << deviceId << " video texture not allocated";
+    }
+    return videoTex;
 }
 
 //---------------------------------------------------------------------------
 const ofTexture& ofxRealSense2::getDepthTexture() const{
-	if(!depthTex.isAllocated()){
-		ofLogWarning("ofxRealSense2") << "getDepthTexture(): device " << deviceId << " depth texture not allocated";
-	}
-	return depthTex;
+    if(!depthTex.isAllocated()){
+        ofLogWarning("ofxRealSense2") << "getDepthTexture(): device " << deviceId << " depth texture not allocated";
+    }
+    return depthTex;
 }
 
 //---------------------------------------------------------------------------
 void ofxRealSense2::enableDepthNearValueWhite(bool bEnabled) {
-	bNearWhite = bEnabled;
-	updateDepthLookupTable();
+    bNearWhite = bEnabled;
+    updateDepthLookupTable();
 }
 
 //---------------------------------------------------------------------------
 bool ofxRealSense2::isDepthNearValueWhite() const{
-	return bNearWhite;
+    return bNearWhite;
 }
 
 void ofxRealSense2::setHighAccuracyPreset() {
@@ -568,58 +581,58 @@ void ofxRealSense2::setFarClipping(float value) {
 
 //---------------------------------------------------------------------------
 void ofxRealSense2::setUseTexture(bool bUse){
-	bUseTexture = bUse;
+    bUseTexture = bUse;
 }
 
 //------------------------------------
 bool ofxRealSense2::isUsingTexture() const{
-	return bUseTexture;
+    return bUseTexture;
 }
 
 //----------------------------------------------------------
 void ofxRealSense2::draw(float _x, float _y, float _w, float _h) const{
-	if(bUseTexture && bGrabVideo) {
-		videoTex.draw(_x, _y, _w, _h);
-	}
+    if(bUseTexture && bGrabVideo) {
+        videoTex.draw(_x, _y, _w, _h);
+    }
     // test
 //    colorImage.draw(_x, _y, _w, _h);
 }
 
 //----------------------------------------------------------
 void ofxRealSense2::draw(float _x, float _y) const{
-	draw(_x, _y, (float)width, (float)height);
+    draw(_x, _y, (float)width, (float)height);
 }
 
 //----------------------------------------------------------
 void ofxRealSense2::draw(const ofPoint & point) const{
-	draw(point.x, point.y);
+    draw(point.x, point.y);
 }
 
 //----------------------------------------------------------
 void ofxRealSense2::draw(const ofRectangle & rect) const{
-	draw(rect.x, rect.y, rect.width, rect.height);
+    draw(rect.x, rect.y, rect.width, rect.height);
 }
 
 //----------------------------------------------------------
 void ofxRealSense2::drawDepth(float _x, float _y, float _w, float _h) const{
-	if(bUseTexture) {
-		depthTex.draw(_x, _y, _w, _h);
-	}
+    if(bUseTexture) {
+        depthTex.draw(_x, _y, _w, _h);
+    }
 }
 
 //---------------------------------------------------------------------------
 void ofxRealSense2::drawDepth(float _x, float _y) const{
-	drawDepth(_x, _y, (float)width, (float)height);
+    drawDepth(_x, _y, (float)width, (float)height);
 }
 
 //----------------------------------------------------------
 void ofxRealSense2::drawDepth(const ofPoint & point) const{
-	drawDepth(point.x, point.y);
+    drawDepth(point.x, point.y);
 }
 
 //----------------------------------------------------------
 void ofxRealSense2::drawDepth(const ofRectangle & rect) const{
-	drawDepth(rect.x, rect.y, rect.width, rect.height);
+    drawDepth(rect.x, rect.y, rect.width, rect.height);
 }
 
 //----------------------------------------------------------
@@ -668,67 +681,67 @@ void ofxRealSense2::drawPointCloud(float width, float height, rs2::points& point
 
 //---------------------------------------------------------------------------
 int ofxRealSense2::getDeviceId() const{
-	return deviceId;
+    return deviceId;
 }
 
 //---------------------------------------------------------------------------
 string ofxRealSense2::getSerial() const{
-	return serial;
+    return serial;
 }
 
 //----------------------------------------------------------
 float ofxRealSense2::getHeight() const{
-	return (float) height;
+    return (float) height;
 }
 
 //---------------------------------------------------------------------------
 float ofxRealSense2::getWidth() const{
-	return (float) width;
+    return (float) width;
 }
 
 //----------------------------------------------------------
 void ofxRealSense2::listDevices() {
-	realSenseContext.listDevices();
+    realSenseContext.listDevices();
 }
 
 //---------------------------------------------------------------------------
 int ofxRealSense2::numTotalDevices() {
-	return realSenseContext.numTotal();
+    return realSenseContext.numTotal();
 }
 
 //---------------------------------------------------------------------------
 int ofxRealSense2::numAvailableDevices() {
-	return realSenseContext.numAvailable();
+    return realSenseContext.numAvailable();
 }
 
 //---------------------------------------------------------------------------
 int ofxRealSense2::numConnectedDevices() {
-	return realSenseContext.numConnected();
+    return realSenseContext.numConnected();
 }
 
 //---------------------------------------------------------------------------
 bool ofxRealSense2::isDeviceConnected(int id) {
-	return realSenseContext.isConnected(id);
+    return realSenseContext.isConnected(id);
 }
 
 //---------------------------------------------------------------------------
 bool ofxRealSense2::isDeviceConnected(string serial) {
-	return realSenseContext.isConnected(serial);
+    return realSenseContext.isConnected(serial);
 }
 
 //---------------------------------------------------------------------------
 int ofxRealSense2::nextAvailableId() {
-	return realSenseContext.nextAvailableId();
+    return realSenseContext.nextAvailableId();
 }
 
 //---------------------------------------------------------------------------
 string ofxRealSense2::nextAvailableSerial() {
-	return realSenseContext.nextAvailableSerial();
+    return realSenseContext.nextAvailableSerial();
 }
 
 //---------------------------------------------------------------------------
 void ofxRealSense2::setReconnectWaitTime(float waitTime) {
-	reconnectWaitTime = waitTime;
+    reconnectWaitTime = waitTime;
 }
 
 
@@ -736,55 +749,55 @@ void ofxRealSense2::setReconnectWaitTime(float waitTime) {
 
 //---------------------------------------------------------------------------
 void ofxRealSense2::updateDepthLookupTable() {
-	unsigned char nearColor = bNearWhite ? 255 : 0;
-	unsigned char farColor = bNearWhite ? 0 : 255;
-	unsigned int maxDepthLevels = 10001;
-	depthLookupTable.resize(maxDepthLevels);
-	depthLookupTable[0] = 0;
-	for(unsigned int i = 1; i < maxDepthLevels; i++) {
-		depthLookupTable[i] = ofMap(i, nearClipping, farClipping, nearColor, farColor, true);
-	}
+    unsigned char nearColor = bNearWhite ? 255 : 0;
+    unsigned char farColor = bNearWhite ? 0 : 255;
+    unsigned int maxDepthLevels = 10001;
+    depthLookupTable.resize(maxDepthLevels);
+    depthLookupTable[0] = 0;
+    for(unsigned int i = 1; i < maxDepthLevels; i++) {
+        depthLookupTable[i] = ofMap(i, nearClipping, farClipping, nearColor, farColor, true);
+    }
 }
 
 //----------------------------------------------------------
 void ofxRealSense2::updateDepthPixels() {
-	int n = width * height;
-	for(int i = 0; i < n; i++) {
-		distancePixels[i] = depthPixelsRaw[i];
-	}
-	for(int i = 0; i < n; i++) {
-		depthPixels[i] = depthLookupTable[depthPixelsRaw[i]];
-	}
+    int n = width * height;
+    for(int i = 0; i < n; i++) {
+        distancePixels[i] = depthPixelsRaw[i];
+    }
+    for(int i = 0; i < n; i++) {
+        depthPixels[i] = depthLookupTable[depthPixelsRaw[i]];
+    }
 }
 
 //---------------------------------------------------------------------------
 void ofxRealSense2::grabDepthFrame(rs2::device *dev, void *depth, uint32_t timestamp) {
 
-	ofxRealSense2* realSense = realSenseContext.getRealSense(dev);
+    ofxRealSense2* realSense = realSenseContext.getRealSense(dev);
 
-	if(realSense->realSenseDevice == dev) {
-		realSense->lock();
-		swap(realSense->depthPixelsRawBack,realSense->depthPixelsRawIntra);
-		realSense->bNeedsUpdateDepth = true;
-		realSense->unlock();
+    if(realSense->realSenseDevice == dev) {
+        realSense->lock();
+        swap(realSense->depthPixelsRawBack,realSense->depthPixelsRawIntra);
+        realSense->bNeedsUpdateDepth = true;
+        realSense->unlock();
     // is there an analogue
-		// freenect_set_depth_buffer(kinect->kinectDevice,kinect->depthPixelsRawBack.getData());
+    // freenect_set_depth_buffer(kinect->kinectDevice,kinect->depthPixelsRawBack.getData());
     }
 }
 
 //---------------------------------------------------------------------------
 void ofxRealSense2::grabVideoFrame(rs2::device *dev, void *video, uint32_t timestamp) {
 
-	ofxRealSense2* realSense = realSenseContext.getRealSense(dev);
+    ofxRealSense2* realSense = realSenseContext.getRealSense(dev);
 
-	if(realSense->realSenseDevice == dev) {
-		realSense->lock();
-		swap(realSense->videoPixelsBack,realSense->videoPixelsIntra);
-		realSense->bNeedsUpdateVideo = true;
-		realSense->unlock();
+    if(realSense->realSenseDevice == dev) {
+        realSense->lock();
+        swap(realSense->videoPixelsBack,realSense->videoPixelsIntra);
+        realSense->bNeedsUpdateVideo = true;
+        realSense->unlock();
     // see if there is an analogue
-		// freenect_set_video_buffer(kinect->kinectDevice,kinect->videoPixelsBack.getData());
-	}
+    // freenect_set_video_buffer(kinect->kinectDevice,kinect->videoPixelsBack.getData());
+    }
 }
 
 //---------------------------------------------------------------------------
@@ -798,32 +811,28 @@ void ofxRealSense2::threadedFunction() {
 
         rs2::frame filtered = depth_frame; // Does not copy the frame, only adds a reference
 
-        //bool revert_disparity = false;
         for (auto&& filter : filters)
         {
             if (filter.is_enabled)
             {
                 filtered = filter.filterBlock.process(filtered);
-                /*
-                if (filter.filter_name == "Disparity")
-                {
-                    revert_disparity = true;
-                }*/
             }
         }
-        /*
-        if (revert_disparity)
-        {
-            filtered = disparity_to_depth.process(filtered);
-        }*/
 
         // Push filtered & original data to their respective queues
         // Note, pushing to two different queues might cause the application to display
         //  original and filtered pointclouds from different depth frames
         //  To make sure they are synchronized you need to push them together or add some
         //  synchronization mechanisms
-        filteredDepth.enqueue(filtered);
-        //originalData.enqueue(depth_frame);
+
+        filteredDepthQueue.enqueue(filtered);
+        //rawDepthQueue.enqueue(depth_frame);
+
+        //pass through video and ir frames unaltered
+        if (bGrabVideo)
+            videoQueue.enqueue(data.get_color_frame());
+        if (bUseInfrared)
+            infraredQueue.enqueue(data.get_infrared_frame());
 
     }
 }
@@ -1009,56 +1018,55 @@ bool ofxRealSenseContext::init() {
 
 //---------------------------------------------------------------------------
 void ofxRealSenseContext::clear() {
-	if(isInited() && numConnected() < 1) {
+    if(isInited() && numConnected() < 1) {
 
-//    freenect_shutdown(realSenseContext);
+    // freenect_shutdown(realSenseContext);
     // no idea what the analogue is perhaps there is a shutdown?
     // freenect_shutdown(kinectContext);
-		realSenseContext = NULL;
-		bInited = false;
-	}
+        realSenseContext = NULL;
+        bInited = false;
+    }
 }
 
 bool ofxRealSenseContext::isInited() {
-	return bInited;
+    return bInited;
 }
 
 bool ofxRealSenseContext::open(ofxRealSense2& realSense, int id) {
 
-	// rebuild if necessary (aka new real sense plugged in)
-	buildDeviceList();
+    // rebuild if necessary (aka new real sense plugged in)
+    buildDeviceList();
 
-	if(numConnected() >= numTotal()) {
-		ofLogWarning("ofxRealSense2") << "no available devices found";
-		return false;
-	}
+    if(numConnected() >= numTotal()) {
+        ofLogWarning("ofxRealSense2") << "no available devices found";
+        return false;
+    }
 
-	// is the id available?
-	if(id < 0) {
-		id = nextAvailableId();
-	}
-	if(isConnected(id)) {
-		ofLogWarning("ofxRealSense2") << "device " << id << " already connected";
-		return false;
-	}
+    // is the id available?
+    if(id < 0) {
+        id = nextAvailableId();
+    }
+    if(isConnected(id)) {
+        ofLogWarning("ofxRealSense2") << "device " << id << " already connected";
+        return false;
+    }
 
     cout << "IN CONTEXT TRYING TO OPEN DEVICE BY ID: " << id << endl;
     cout << deviceList[id].serial << endl;
-    
+
     realSense.config.enable_stream(RS2_STREAM_COLOR, COLOR_WIDTH, COLOR_HEIGHT, RS2_FORMAT_RGB8, 30);
     realSense.config.enable_stream(RS2_STREAM_DEPTH, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Z16, 30);
     realSense.config.enable_stream(RS2_STREAM_INFRARED, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Y8, 30);
     realSense.config.enable_device(deviceList[id].serial);
     realSense.profile = realSense.pipe.start(realSense.config);
-    
-    
-	realSenses.insert(pair<int,ofxRealSense2*>(id, &realSense));
 
-	// set kinect id & serial from bus id
-	realSense.deviceId = id;
-	realSense.serial = deviceList[getDeviceIndex(id)].serial;
+    realSenses.insert(pair<int,ofxRealSense2*>(id, &realSense));
 
-	return true;
+    // set kinect id & serial from bus id
+    realSense.deviceId = id;
+    realSense.serial = deviceList[getDeviceIndex(id)].serial;
+
+    return true;
 }
 
 bool ofxRealSenseContext::open(ofxRealSense2& realSense, string serial) {
@@ -1085,41 +1093,59 @@ bool ofxRealSenseContext::open(ofxRealSense2& realSense, string serial) {
     realSense.config.enable_stream(RS2_STREAM_INFRARED, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Y8, 30);
     realSense.config.enable_device(serial);
     realSense.profile = realSense.pipe.start(realSense.config);
-    
-	realSenses.insert(pair<int,ofxRealSense2*>(deviceList[index].id, &realSense));
-	realSense.deviceId = deviceList[index].id;
-	realSense.serial = serial;
 
-	return true;
+    realSenses.insert(pair<int,ofxRealSense2*>(deviceList[index].id, &realSense));
+    realSense.deviceId = deviceList[index].id;
+    realSense.serial = serial;
+
+    return true;
+}
+
+bool ofxRealSenseContext::openFromFile(ofxRealSense2& realSense, string filename) {
+
+    cout << "IN CONTEXT TRYING TO OPEN DEVICE FROM FILE: " << filename << endl;
+
+    realSense.config.enable_stream(RS2_STREAM_DEPTH, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Z16, 30);
+    realSense.config.enable_device_from_file(filename);
+    realSense.profile = realSense.pipe.start(realSense.config); //File will be opened in read mode at this point
+    auto device = realSense.pipe.get_active_profile().get_device();
+    device.as<rs2::playback>().resume();
+
+    int idNum = nextAvailableId() + 1; //The file 'device' won't be in the hardware list so we take the next-next Id
+    realSenses.insert(pair<int,ofxRealSense2*>(idNum, &realSense));
+    realSense.deviceId = idNum;
+    realSense.serial = device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+
+    return true;
 }
 
 void ofxRealSenseContext::close(ofxRealSense2& realSense) {
 
-	// check if it's already closed
-	int id = -1;
-	std::map<int,ofxRealSense2*>::iterator iter;
-	for(iter = realSenses.begin(); iter != realSenses.end(); ++iter) {
-		if(iter->second == &realSense) {
-			id = iter->first;
-			break;
-		}
-	}
-	if(id == -1)
-		return;
+    // check if it's already closed
+    int id = -1;
+    std::map<int,ofxRealSense2*>::iterator iter;
+    for(iter = realSenses.begin(); iter != realSenses.end(); ++iter) {
+        if(iter->second == &realSense) {
+            id = iter->first;
+            break;
+        }
+    }
+    if(id == -1)
+        return;
 
-	// remove connected device and close
-	iter = realSenses.find(id);
-	if(iter != realSenses.end()) {
-		realSenses.erase(iter);
+    // remove connected device and close
+    iter = realSenses.find(id);
+    if(iter != realSenses.end()) {
+        realSenses.erase(iter);
     // will need to find an analogue
 
-		// freenect_close_device(kinect.kinectDevice);
-	}
+        // freenect_close_device(kinect.kinectDevice);
+    }
 }
 
 void ofxRealSenseContext::closeAll() {
-	// make copy of map to avoid invalidating iter when calling close()
-	std::map<int,ofxRealSense2*> realSensesCopy(realSenses);
+    // make copy of map to avoid invalidating iter when calling close()
+    std::map<int,ofxRealSense2*> realSensesCopy(realSenses);
     std::map<int,ofxRealSense2*>::iterator iter;
     for(iter = realSensesCopy.begin(); iter != realSensesCopy.end(); ++iter) {
         iter->second->close();
@@ -1129,7 +1155,7 @@ void ofxRealSenseContext::closeAll() {
 //---------------------------------------------------------------------------
 void ofxRealSenseContext::buildDeviceList() {
 
-	deviceList.clear();
+    deviceList.clear();
 
 	// build the device list from freenect
   // this thing needs to have an analogue below
@@ -1150,13 +1176,13 @@ void ofxRealSenseContext::buildDeviceList() {
 //    freenect_free_device_attributes(devAttrib);
 
     // Obtain a list of devices currently present on the system
-    
+
     auto devices = realSenseContext->query_devices();
     size_t device_count = devices.size();
     if (!device_count)
     {
         cout <<"No device detected. Is it plugged in?\n";
-        //return EXIT_SUCCESS;
+        return;
     }
     else{
         cout << "You have " << device_count << " devices" << endl;
@@ -1169,28 +1195,28 @@ void ofxRealSenseContext::buildDeviceList() {
         << setw(20) << "Serial Number"
         << setw(20) << "Firmware Version"
         << endl;
-    
+
         int i = 0;
         for (auto&& dev : devices) // Query the list of connected RealSense devices
         {
 //        for (int i = 0; i < device_count; i++)
 //        {
-            
+
 //            auto dev = devices[i];
-            
+
             RealSensePair rp;
             rp.id = i;
             rp.serial = dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
-            
+
             cout << left << setw(30) << dev.get_info(RS2_CAMERA_INFO_NAME)
             << setw(20) << dev.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)
             << setw(20) << dev.get_info(RS2_CAMERA_INFO_FIRMWARE_VERSION)
             << endl;
-            
+
             deviceList.push_back(rp);
             ++i;
         }
-        
+
 //        if (show_options.getValue() || show_modes.getValue())
 //            cout << "\n\nNote:  \"-s\" option is not compatible with the other flags specified,"
 //            << " all the additional options are skipped" << endl;
@@ -1421,90 +1447,90 @@ void ofxRealSenseContext::buildDeviceList() {
 //
 //    cout << endl;
     
-	// sort devices by serial number
-	sort(deviceList.begin(), deviceList.end(), sortRealSensePairs);
+    // sort devices by serial number
+    sort(deviceList.begin(), deviceList.end(), sortRealSensePairs);
 }
 
 void ofxRealSenseContext::listDevices(bool verbose) {
-  if(!isInited())
-	init();
+    if(!isInited())
+        init();
 
-	stringstream stream;
+    stringstream stream;
 
-	if(numTotal() == 0) {
-		stream << "no devices found";
-		return;
-	}
-	else if(numTotal() == 1) {
-		stream << 1 << " device found";
-	}
-	else {
-		stream << deviceList.size() << " devices found";
-	}
+    if(numTotal() == 0) {
+        stream << "no devices found";
+        return;
+    }
+    else if(numTotal() == 1) {
+        stream << 1 << " device found";
+    }
+    else {
+        stream << deviceList.size() << " devices found";
+    }
 
-	if(verbose) {
-		ofLogVerbose("ofxRealSense2") << stream.str();
-	}
-	else {
-		ofLogNotice("ofxRealSense2") << stream.str();
-	}
-	stream.str("");
+    if(verbose) {
+        ofLogVerbose("ofxRealSense2") << stream.str();
+    }
+    else {
+        ofLogNotice("ofxRealSense2") << stream.str();
+    }
+    stream.str("");
 
-	for(size_t i = 0; i < deviceList.size(); ++i) {
-		stream << "    id: " << deviceList[i].id << " serial: " << deviceList[i].serial;
-		if(verbose) {
-			ofLogVerbose("ofxRealSense2") << stream.str();
-		}
-		else {
-			ofLogNotice("ofxRealSense2") << stream.str();
-		}
-		stream.str("");
-	}
+    for(size_t i = 0; i < deviceList.size(); ++i) {
+        stream << "    id: " << deviceList[i].id << " serial: " << deviceList[i].serial;
+        if(verbose) {
+            ofLogVerbose("ofxRealSense2") << stream.str();
+        }
+        else {
+            ofLogNotice("ofxRealSense2") << stream.str();
+        }
+        stream.str("");
+    }
 }
 
 int ofxRealSenseContext::numTotal() {
     if(!isInited())
-		init();
+        init();
     // need an analogue
 //    return freenect_num_devices(realSenseContext);
     return deviceList.size();
 }
 
 int ofxRealSenseContext::numAvailable() {
-	if(!isInited())
-		init();
+    if(!isInited())
+        init();
     // need an analogue
 //    return freenect_num_devices(realSenseContext) - realSenses.size();
     return deviceList.size();
 }
 
 int ofxRealSenseContext::numConnected() {
-	return realSenses.size();
+    return realSenses.size();
 }
 
 ofxRealSense2* ofxRealSenseContext::getRealSense(rs2::device* dev) {
-	std::map<int,ofxRealSense2*>::iterator iter;
-	for(iter = realSenses.begin(); iter != realSenses.end(); ++iter) {
-		if(iter->second->realSenseDevice == dev)
-			return iter->second;
-	}
-	return NULL;
+    std::map<int,ofxRealSense2*>::iterator iter;
+    for(iter = realSenses.begin(); iter != realSenses.end(); ++iter) {
+        if(iter->second->realSenseDevice == dev)
+            return iter->second;
+    }
+    return NULL;
 }
 
 int ofxRealSenseContext::getDeviceIndex(int id) {
-	for(size_t i = 0; i < deviceList.size(); ++i) {
-		if(deviceList[i].id == id)
-			return i;
-	}
-	return -1;
+    for(size_t i = 0; i < deviceList.size(); ++i) {
+        if(deviceList[i].id == id)
+            return i;
+    }
+    return -1;
 }
 
 int ofxRealSenseContext::getDeviceIndex(string serial) {
-	for(size_t i = 0; i < deviceList.size(); ++i) {
-		if(deviceList[i].serial == serial)
-			return i;
-	}
-	return -1;
+    for(size_t i = 0; i < deviceList.size(); ++i) {
+        if(deviceList[i].serial == serial)
+            return i;
+    }
+    return -1;
 }
 
 
@@ -1512,79 +1538,62 @@ int ofxRealSenseContext::getDeviceId(unsigned int index) {
     if( index >= 0 && index < deviceList.size() ){
         return deviceList[index].id;
     }
-	return -1;
+    return -1;
 }
 
 int ofxRealSenseContext::getDeviceId(string serial){
-	for(size_t i = 0; i < deviceList.size(); ++i) {
-		if(deviceList[i].serial == serial){
-			return deviceList[i].id;
+    for(size_t i = 0; i < deviceList.size(); ++i) {
+        if(deviceList[i].serial == serial){
+            return deviceList[i].id;
         }
-	}
-	return -1;
+    }
+    return -1;
 }
 
 bool ofxRealSenseContext::isConnected(int id) {
-	std::map<int,ofxRealSense2*>::iterator iter = realSenses.find(id);
-	return iter != realSenses.end();
+    std::map<int,ofxRealSense2*>::iterator iter = realSenses.find(id);
+    return iter != realSenses.end();
 }
 
 bool ofxRealSenseContext::isConnected(string serial) {
-	std::map<int,ofxRealSense2*>::iterator iter;
-	for(iter = realSenses.begin(); iter != realSenses.end(); ++iter) {
-		if(iter->second->getSerial() == serial)
-			return true;
-	}
-	return false;
+    std::map<int,ofxRealSense2*>::iterator iter;
+    for(iter = realSenses.begin(); iter != realSenses.end(); ++iter) {
+        if(iter->second->getSerial() == serial)
+            return true;
+    }
+    return false;
 }
 
 int ofxRealSenseContext::nextAvailableId() {
-	if(!isInited())
-		init();
+    if(!isInited())
+        init();
 
-	// a brute force free index finder :D
-	std::map<int,ofxRealSense2*>::iterator iter;
-	for(size_t i = 0; i < deviceList.size(); ++i) {
-		iter = realSenses.find(deviceList[i].id);
-		if(iter == realSenses.end())
-			return deviceList[i].id;
-	}
-	return -1;
+    // a brute force free index finder :D
+    std::map<int,ofxRealSense2*>::iterator iter;
+    for(size_t i = 0; i < deviceList.size(); ++i) {
+        iter = realSenses.find(deviceList[i].id);
+        if(iter == realSenses.end())
+            return deviceList[i].id;
+    }
+    return -1;
 }
 
 string ofxRealSenseContext::nextAvailableSerial() {
-	if(!isInited())
-		init();
+    if(!isInited())
+        init();
 
-	int id = nextAvailableId();
-	if(id == -1) {
-		return "";
-	}
-	return deviceList[getDeviceIndex(id)].serial;
+    int id = nextAvailableId();
+    if(id == -1) {
+        return "";
+    }
+    return deviceList[getDeviceIndex(id)].serial;
 }
 
 
-/*******************************************************
-* ===================================================
-*                   POST-PROCESSING THREAD
-* ===================================================
-* *****************************************************/
 Filter::Filter(rs2::processing_block& filter) :
     filterBlock(filter),
-    is_enabled(true)
+    is_enabled(false)
 {
 
 }
 
-/*
-void PostProcessingThread::setup() {
-    frameReady = false;
-    return;
-}
-
-void PostProcessingThread::threadedFunction() {
-}
-
-void PostProcessingThread::update() {
-    return;
-}*/

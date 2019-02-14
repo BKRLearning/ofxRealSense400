@@ -74,6 +74,8 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
         bool open(string serial);
 
+        bool openFromFile(string filename);
+
         void close();
 
         /// is the connection currently open?
@@ -153,10 +155,10 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
         // set the near value of the pixels in the grayscale depth image to white
 
-      	// bEnabled = true:  pixels closer to the camera are brighter (default)
-      	// bEnabled = false: pixels closer to the camera are darker
-      	void enableDepthNearValueWhite(bool bEnabled=true);
-      	bool isDepthNearValueWhite() const;
+        // bEnabled = true:  pixels closer to the camera are brighter (default)
+        // bEnabled = false: pixels closer to the camera are darker
+        void enableDepthNearValueWhite(bool bEnabled=true);
+        bool isDepthNearValueWhite() const;
 
         // set the clipping planes for the depth calculations in millimeters
 
@@ -195,10 +197,10 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
         std::vector<Filter> filters;
 
-        rs2::frame_queue originalDepth;
-        rs2::frame_queue filteredDepth;
-
-        //PostProcessingThread filterThread;
+        //rs2::frame_queue rawDepthQueue;
+        rs2::frame_queue filteredDepthQueue;
+        rs2::frame_queue videoQueue;
+        rs2::frame_queue infraredQueue;
 
         /// enable/disable frame loading into textures on update()
         void setUseTexture(bool bUse);
@@ -221,49 +223,49 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         void drawIR(float x, float y) const;
         void drawIR(const ofPoint& point) const;
         void drawIR(const ofRectangle& rect) const;
-    
+
         // pointcloud work
         void generatePointCloud();
         void drawPointCloud(float width, float height, rs2::points& points);
-    
+
         /// get the device id
         /// returns -1 if not connected
         int getDeviceId() const;
-    
+
         string getSerial() const;
-    
+
         /// static kinect image size
         const static int width = 1280;
         const static int height = 720;
         float getHeight() const;
         float getWidth() const;
-    
+
         /// \section Static global kinect context functions
-    
+
         /// print the device list
         static void listDevices();
-    
+
         /// get the total number of devices
         static int numTotalDevices();
-    
+
         /// get the number of available devices (not connected)
         static int numAvailableDevices();
-    
+
         /// get the number of currently connected devices
         static int numConnectedDevices();
-    
+
         /// is a device already connected?
         static bool isDeviceConnected(int id);
         static bool isDeviceConnected(string serial);
-    
+
         /// get the id of the next available device,
         /// returns -1 if nothing found
         static int nextAvailableId();
-    
+
         /// get the serial number of the next available device,
         /// returns an empty string "" if nothing found
         static string nextAvailableSerial();
-    
+
         /// set the time to wait when not getting data before attempting to re-open device.
         static void setReconnectWaitTime(float waitTime);
 
@@ -276,10 +278,10 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         ofTexture videoTex; ///< the RGB texture
         ofTexture infraredTex;
         bool bGrabberInited;
-    
+
         bool bUseDepth;
         bool bUseInfrared;
-    
+
 
         ofPixels videoPixels;
         ofPixels depthPixels;
@@ -333,19 +335,19 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
         /// thread function
         void threadedFunction();
-    
+
         rs2::colorizer color_map;
         rs2::config config;
         rs2::pipeline pipe;
         std::map<int, rs2::frame> frames_per_stream;
         rs2::pipeline_profile profile;
         rs2_intrinsics intr;
-    
+
         rs2::frameset allset;
         rs2::frame depth;
         rs2::frame color;
         rs2::frame infrared;
-    
+
         rs2::pointcloud pointCloud;
         rs2::points points;
 
@@ -362,103 +364,106 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 ///
 class ofxRealSenseContext {
 
-public:
+  public:
 
-	ofxRealSenseContext();
-	~ofxRealSenseContext();
+    ofxRealSenseContext();
+    ~ofxRealSenseContext();
 
-/// \section Main
+    /// \section Main
 
-	/// init the freenect context
-	bool init();
+    /// init the freenect context
+    bool init();
 
-	/// clear the freenect context
-	/// closes all currently connected devices
-	void clear();
+    /// clear the freenect context
+    /// closes all currently connected devices
+    void clear();
 
-	/// is the context inited?
-	bool isInited();
+    /// is the context inited?
+    bool isInited();
 
-	/// open a kinect device
-	/// an id of -1 will open the first available
-	bool open(ofxRealSense2& realSense, int id=-1);
+    /// open a kinect device
+    /// an id of -1 will open the first available
+    bool open(ofxRealSense2& realSense, int id=-1);
 
-	/// open a kinect device by it's unique serial number
-	bool open(ofxRealSense2& realSense, string serial);
+    /// open a kinect device by it's unique serial number
+    bool open(ofxRealSense2& realSense, string serial);
 
-	/// close a kinect device
-	void close(ofxRealSense2& realSense);
+    // open a realsense device recording
+    bool openFromFile(ofxRealSense2& realSense, string filename);
 
-	/// closes all currently connected kinects
-	void closeAll();
+    /// close a kinect device
+    void close(ofxRealSense2& realSense);
 
-/// \section Util
+    /// closes all currently connected kinects
+    void closeAll();
 
-	/// (re)build the list of devices
-	void buildDeviceList();
+    /// \section Util
 
-	/// print the device list
-	void listDevices(bool verbose=false);
+    /// (re)build the list of devices
+    void buildDeviceList();
 
-	/// get the total number of devices
-	int numTotal();
+    /// print the device list
+    void listDevices(bool verbose=false);
 
-	/// get the number of available devices (not connected)
-	int numAvailable();
+    /// get the total number of devices
+    int numTotal();
 
-	/// get the number of currently connected devices
-	int numConnected();
+    /// get the number of available devices (not connected)
+    int numAvailable();
 
-	/// get the kinect object from a device pointer
-	/// returns NULL if not found
-	ofxRealSense2* getRealSense(rs2::device* dev);
+    /// get the number of currently connected devices
+    int numConnected();
 
-	/// get the deviceList index from an id
-	/// returns -1 if not found
-	int getDeviceIndex(int id);
+    /// get the kinect object from a device pointer
+    /// returns NULL if not found
+    ofxRealSense2* getRealSense(rs2::device* dev);
 
-	/// get the deviceList index from an id
-	/// returns -1 if not found
-	int getDeviceIndex(string serial);
+    /// get the deviceList index from an id
+    /// returns -1 if not found
+    int getDeviceIndex(int id);
 
-	/// get the deviceList id from an index
-	/// returns -1 if not found
+    /// get the deviceList index from an id
+    /// returns -1 if not found
+    int getDeviceIndex(string serial);
+
+    /// get the deviceList id from an index
+    /// returns -1 if not found
     int getDeviceId(unsigned int index);
 
-	/// get the deviceList id from a serial
-	/// returns -1 if not found
+    /// get the deviceList id from a serial
+    /// returns -1 if not found
     int getDeviceId(string serial);
 
-	/// is a device with this id already connected?
-	bool isConnected(int id);
+    /// is a device with this id already connected?
+    bool isConnected(int id);
 
-	/// is a device with this serial already connected?
-	bool isConnected(string serial);
+    /// is a device with this serial already connected?
+    bool isConnected(string serial);
 
-	/// get the id of the next available device,
-	/// returns -1 if nothing found
-	int nextAvailableId();
+    /// get the id of the next available device,
+    /// returns -1 if nothing found
+    int nextAvailableId();
 
-	/// get the serial number of the next available device,
-	/// returns an empty string "" if nothing found
-	string nextAvailableSerial();
+    /// get the serial number of the next available device,
+    /// returns an empty string "" if nothing found
+    string nextAvailableSerial();
 
-	/// get the raw pointer
-	rs2::context* getContext() {return realSenseContext;}
+    /// get the raw pointer
+    rs2::context* getContext() {return realSenseContext;}
 
-	// for auto-enumeration
- struct RealSensePair{
-    string serial;	///< unique serial number
-    int id;			///< freenect bus id
- };
+    // for auto-enumeration
+    struct RealSensePair{
+        string serial;	///< unique serial number
+        int id;			///< freenect bus id
+    };
 
-//private:
+  //private:
 
     std::vector<rs2::device> realSenseDevices; // may not be used, just as backup
-	bool bInited;						///< has the context been initialized?
+    bool bInited;						///< has the context been initialized?
     rs2::context* realSenseContext;    ///< real sense context handle
-	std::vector<RealSensePair> deviceList;	///< list of available devices, sorted by serial lexicographically
-	std::map<int,ofxRealSense2*> realSenses;   ///< the connected kinects
+    std::vector<RealSensePair> deviceList;	///< list of available devices, sorted by serial lexicographically
+    std::map<int,ofxRealSense2*> realSenses;   ///< the connected kinects
 //    rs2::error* e;
 };
 
