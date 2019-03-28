@@ -1,12 +1,15 @@
 #pragma once
 
+#include <string>
+#include <atomic>
 #include "ofMain.h"
 #include "rs.hpp"
 
 class Filter {
-    public:
-        Filter(rs2::processing_block& filter);
-
+ public:
+        Filter(const string name, rs2::processing_block& filter);
+        Filter(Filter&& other);
+        string name;
         rs2::processing_block& filterBlock;
-        bool is_enabled;
+        std::atomic_bool is_enabled;
 };
