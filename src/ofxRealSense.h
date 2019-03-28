@@ -31,6 +31,7 @@
 ==============================================================================*/
 #pragma once
 
+#include <cmath>
 #include <string>
 #include "ofMain.h"
 #include "rs.h"
@@ -65,6 +66,10 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         bool init(bool infrared=false, bool video=true, bool texture=true);
 
         void initFilters();
+
+        void toggleFilter(string name, bool value);
+
+        void setFilterOption(const string name, int optionEnum, float value);
 
         void clear();
 
@@ -350,6 +355,11 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
         rs2::pointcloud pointCloud;
         rs2::points points;
+
+        rs2::decimation_filter decimationFilter;
+        rs2::spatial_filter spatialFilter;
+        rs2::temporal_filter temporalFilter;
+        rs2::hole_filling_filter holeFillingFilter;
 
         ofImage colorImage;
         ofImage depthImage;

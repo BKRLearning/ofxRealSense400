@@ -41,6 +41,7 @@ ofxRealSense2::ofxRealSense2(){
 
   bUseTexture = true;
   bGrabVideo = true;
+  bUseDepth = true;
 
   // set defaults
   bGrabberInited = false;
@@ -151,21 +152,40 @@ void ofxRealSense2::clear() {
 }
 
 void ofxRealSense2::initFilters() {
-    rs2::decimation_filter dec_filter;  // Decimation - reduces depth frame density
-    filters.emplace_back(dec_filter);
+    decimationFilter.set_option(RS2_OPTION_FILTER_MAGNITUDE, 1.0);
+    // Decimation - reduces depth frame density
+    filters.emplace_back("decimation", decimationFilter);
 
     //complicates the filter logic and doesn't seem useful
     //rs2::disparity_transform depth_to_disparity(true);
     //filters.emplace_back(depth_to_disparity, false);
 
-    rs2::spatial_filter spat_filter;    // Spatial    - edge-preserving spatial smoothing
-    filters.emplace_back(spat_filter);
+    // Spatial    - edge-preserving spatial smoothing
+    filters.emplace_back("spatial", spatialFilter);
 
-    rs2::temporal_filter temp_filter; // Temporal   - reduces temporal noise
-    filters.emplace_back(temp_filter);
+    // Temporal   - reduces temporal noise
+    filters.emplace_back("temporal", temporalFilter);
 
-    rs2::hole_filling_filter hole_filter; //Hole Filling
-    filters.emplace_back(hole_filter);
+    //Hole Filling
+    filters.emplace_back("hole filling", holeFillingFilter);
+}
+
+void ofxRealSense2::toggleFilter(string name, bool value) {
+    for (auto&& filter : filters) {
+        if (filter.name == name) {
+            filter.is_enabled = value;
+            cout << "Toggling " << name << " filter" << endl;
+        }
+    }
+}
+
+void ofxRealSense2::setFilterOption(const string name, int optionEnum, float value) {
+    for (auto&& filter : filters) {
+        if (filter.name == name) {
+            cout << "Setting " << name << " option " << (rs2_option)optionEnum << endl;
+            filter.filterBlock.set_option((rs2_option)optionEnum, value);
+        }
+    }
 }
 
 void ofxRealSense2::setRegistration(bool bUseRegistration) {
@@ -813,8 +833,10 @@ void ofxRealSense2::threadedFunction() {
 
         for (auto&& filter : filters)
         {
+            // cout << filter.is_enabled << std::endl;
             if (filter.is_enabled)
             {
+                // cout << "APPLYING " << filter.name << std::endl;
                 filtered = filter.filterBlock.process(filtered);
             }
         }
@@ -833,7 +855,6 @@ void ofxRealSense2::threadedFunction() {
             videoQueue.enqueue(data.get_color_frame());
         if (bUseInfrared)
             infraredQueue.enqueue(data.get_infrared_frame());
-
     }
 }
 
@@ -1590,10 +1611,16 @@ string ofxRealSenseContext::nextAvailableSerial() {
 }
 
 
-Filter::Filter(rs2::processing_block& filter) :
+Filter::Filter(const string name, rs2::processing_block& filter) :
+    name(name),
     filterBlock(filter),
-    is_enabled(false)
-{
-
+    is_enabled(false) {
+//
 }
 
+Filter::Filter(Filter&& other) :
+    name(std::move(other.name)),
+    filterBlock(other.filterBlock),
+    is_enabled(other.is_enabled.load()) {
+//
+}
