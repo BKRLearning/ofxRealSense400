@@ -40,8 +40,8 @@
 
 #define COLOR_WIDTH 1280
 #define COLOR_HEIGHT 720
-#define DEPTH_WIDTH 1280
-#define DEPTH_HEIGHT 720
+#define DEPTH_WIDTH 848
+#define DEPTH_HEIGHT 480
 
 #if defined(_MSC_VER) || defined(_WIN32) || defined(WIN32) || defined(__MINGW32__)
     // do windows stuff
