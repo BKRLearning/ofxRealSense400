@@ -1611,7 +1611,7 @@ string ofxRealSenseContext::nextAvailableSerial() {
 }
 
 
-Filter::Filter(const string name, rs2::processing_block& filter) :
+Filter::Filter(const string name, rs2::filter& filter) :
     name(name),
     filterBlock(filter),
     is_enabled(false) {
