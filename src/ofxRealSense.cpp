@@ -449,39 +449,39 @@ ofColor ofxRealSense2::getColorAt(int x, int y)  const{
 }
 
 //------------------------------------
-ofColor ofxRealSense2::getColorAt(const ofPoint & p)  const{
+ofColor ofxRealSense2::getColorAt(const ofPoint & p)  const {
     return getColorAt(p.x, p.y);
 }
 
-ofPixels & ofxRealSense2::getPixels(){
+ofPixels & ofxRealSense2::getPixels() {
     return videoPixels;
 }
 
-ofPixels & ofxRealSense2::getDepthPixels(){
+ofPixels & ofxRealSense2::getDepthPixels() {
     return depthPixels;
 }
 
-ofShortPixels & ofxRealSense2::getRawDepthPixels(){
+ofShortPixels & ofxRealSense2::getRawDepthPixels() {
     return depthPixelsRaw;
 }
 
-ofFloatPixels & ofxRealSense2::getDistancePixels(){
+ofFloatPixels & ofxRealSense2::getDistancePixels() {
     return distancePixels;
 }
 
-const ofPixels & ofxRealSense2::getPixels() const{
+const ofPixels & ofxRealSense2::getPixels() const {
     return videoPixels;
 }
 
-const ofPixels & ofxRealSense2::getDepthPixels() const{
+const ofPixels & ofxRealSense2::getDepthPixels() const {
     return depthPixels;
 }
 
-const ofShortPixels & ofxRealSense2::getRawDepthPixels() const{
+const ofShortPixels & ofxRealSense2::getRawDepthPixels() const {
     return depthPixelsRaw;
 }
 
-const ofFloatPixels & ofxRealSense2::getDistancePixels() const{
+const ofFloatPixels & ofxRealSense2::getDistancePixels() const {
     return distancePixels;
 }
 
@@ -723,6 +723,11 @@ float ofxRealSense2::getWidth() const{
 //----------------------------------------------------------
 void ofxRealSense2::listDevices() {
     realSenseContext.listDevices();
+}
+
+//----------------------------------------------------------
+vector<string> ofxRealSense2::getAvailableSerials() {
+    return realSenseContext.getAvailableSerials();
 }
 
 //---------------------------------------------------------------------------

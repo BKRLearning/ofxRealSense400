@@ -11,7 +11,7 @@ class ofxRealSense2;
 
 class ofxRealSenseContext {
 
-  public:
+ public:
     ofxRealSenseContext();
     ~ofxRealSenseContext();
 
@@ -50,6 +50,9 @@ class ofxRealSenseContext {
 
     /// print the device list
     void listDevices(bool verbose=false);
+
+    // get a vector of all serial numbers
+    vector<string> getAvailableSerials();
 
     /// get the total number of devices
     int numTotal();

@@ -645,6 +645,16 @@ void ofxRealSenseContext::listDevices(bool verbose) {
     }
 }
 
+vector<string> ofxRealSenseContext::getAvailableSerials() {
+    vector<string> serials;
+    for (size_t i = 0; i < deviceList.size(); ++i) {
+        if (!isConnected(deviceList[i].serial)) {
+            serials.push_back(deviceList[i].serial);
+        }
+    }
+    return serials;
+}
+
 int ofxRealSenseContext::numTotal() {
     if(!isInited())
         init();
