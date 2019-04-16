@@ -7,9 +7,9 @@
 
 class Filter {
  public:
-        Filter(const string name, rs2::processing_block& filter);
+        Filter(const string name, rs2::filter& filter);
         Filter(Filter&& other);
         string name;
-        rs2::processing_block& filterBlock;
+        rs2::filter& filterBlock;
         std::atomic_bool is_enabled;
 };

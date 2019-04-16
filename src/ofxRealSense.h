@@ -33,6 +33,7 @@
 
 #include <cmath>
 #include <string>
+#include <map>
 #include "ofMain.h"
 #include "rs.h"
 #include "rs.hpp"
@@ -40,8 +41,8 @@
 
 #define COLOR_WIDTH 1280
 #define COLOR_HEIGHT 720
-#define DEPTH_WIDTH 848
-#define DEPTH_HEIGHT 480
+#define DEPTH_WIDTH 1280
+#define DEPTH_HEIGHT 720
 
 #if defined(_MSC_VER) || defined(_WIN32) || defined(WIN32) || defined(__MINGW32__)
     // do windows stuff
@@ -50,15 +51,13 @@
     #include <libusb.h>
 #endif
 
-
 #include "ofxBase3DVideo.h"
+#include "ofxRealSenseContext.h"
 #include "Filter.h"
 
 class ofxRealSenseContext;
 
 class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
-    
-    
     public:
         ofxRealSense2();
         virtual ~ofxRealSense2();
@@ -128,10 +127,10 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         /// center of image is (0.0)
         ofVec3f getWorldCoordinateAt(int cx, int cy) const;
         ofVec3f getWorldCoordinateAt(float cx, float cy, float wz) const;
-    
+
         ofColor getColorAt(int x, int y) const;
         ofColor getColorAt(const ofPoint & p) const;
-    
+
         ofPixels & getPixels();
         const ofPixels & getPixels() const;
 
@@ -174,13 +173,6 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         // note: you won't get any data < 50cm and distances > 4m start to get noisy
         //void setDepthClipping(float nearClip=500, float farClip=4000);
 
-        /*******************************************************
-        * ===================================================
-        *                   NEW CLIPPING STUFF
-        *           Implementation -- lines 470 - 536 in .cpp
-        * ===================================================
-        * *****************************************************/
-
         //Get values needed to set up clipping controls
         float getClippingOptionMin() const;
         float getClippingOptionMax() const;
@@ -193,12 +185,6 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         //Setting individually since we have separate controls
         void setNearClipping(float value);
         void setFarClipping(float value);
-
-        /******************************************************
-         * ==================================================
-         *                 END NEW CLIPPING STUFF
-         * ==================================================
-         * ****************************************************/
 
         std::vector<Filter> filters;
 
@@ -249,6 +235,8 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
         /// print the device list
         static void listDevices();
+
+        static vector<string> getAvailableSerials();
 
         /// get the total number of devices
         static int numTotalDevices();
@@ -365,116 +353,3 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         ofImage depthImage;
         ofImage infraredImage;
 };
-
-/// \class ofxRealSenseContext
-///
-/// wrapper for the realsense context
-///
-/// do not use this directly
-///
-class ofxRealSenseContext {
-
-  public:
-
-    ofxRealSenseContext();
-    ~ofxRealSenseContext();
-
-    /// \section Main
-
-    /// init the freenect context
-    bool init();
-
-    /// clear the freenect context
-    /// closes all currently connected devices
-    void clear();
-
-    /// is the context inited?
-    bool isInited();
-
-    /// open a kinect device
-    /// an id of -1 will open the first available
-    bool open(ofxRealSense2& realSense, int id=-1);
-
-    /// open a kinect device by it's unique serial number
-    bool open(ofxRealSense2& realSense, string serial);
-
-    // open a realsense device recording
-    bool openFromFile(ofxRealSense2& realSense, string filename);
-
-    /// close a kinect device
-    void close(ofxRealSense2& realSense);
-
-    /// closes all currently connected kinects
-    void closeAll();
-
-    /// \section Util
-
-    /// (re)build the list of devices
-    void buildDeviceList();
-
-    /// print the device list
-    void listDevices(bool verbose=false);
-
-    /// get the total number of devices
-    int numTotal();
-
-    /// get the number of available devices (not connected)
-    int numAvailable();
-
-    /// get the number of currently connected devices
-    int numConnected();
-
-    /// get the kinect object from a device pointer
-    /// returns NULL if not found
-    ofxRealSense2* getRealSense(rs2::device* dev);
-
-    /// get the deviceList index from an id
-    /// returns -1 if not found
-    int getDeviceIndex(int id);
-
-    /// get the deviceList index from an id
-    /// returns -1 if not found
-    int getDeviceIndex(string serial);
-
-    /// get the deviceList id from an index
-    /// returns -1 if not found
-    int getDeviceId(unsigned int index);
-
-    /// get the deviceList id from a serial
-    /// returns -1 if not found
-    int getDeviceId(string serial);
-
-    /// is a device with this id already connected?
-    bool isConnected(int id);
-
-    /// is a device with this serial already connected?
-    bool isConnected(string serial);
-
-    /// get the id of the next available device,
-    /// returns -1 if nothing found
-    int nextAvailableId();
-
-    /// get the serial number of the next available device,
-    /// returns an empty string "" if nothing found
-    string nextAvailableSerial();
-
-    /// get the raw pointer
-    rs2::context* getContext() {return realSenseContext;}
-
-    // for auto-enumeration
-    struct RealSensePair{
-        string serial;	///< unique serial number
-        int id;			///< freenect bus id
-    };
-
-  //private:
-
-    std::vector<rs2::device> realSenseDevices; // may not be used, just as backup
-    bool bInited;						///< has the context been initialized?
-    rs2::context* realSenseContext;    ///< real sense context handle
-    std::vector<RealSensePair> deviceList;	///< list of available devices, sorted by serial lexicographically
-    std::map<int,ofxRealSense2*> realSenses;   ///< the connected kinects
-//    rs2::error* e;
-};
-
-
