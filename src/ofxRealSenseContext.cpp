@@ -211,9 +211,6 @@ bool ofxRealSenseContext::open(ofxRealSense2& realSense, int id) {
     cout << "IN CONTEXT TRYING TO OPEN DEVICE BY ID: " << id << endl;
     cout << deviceList[id].serial << endl;
 
-    realSense.config.enable_stream(RS2_STREAM_COLOR, COLOR_WIDTH, COLOR_HEIGHT, RS2_FORMAT_RGB8, 30);
-    realSense.config.enable_stream(RS2_STREAM_DEPTH, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Z16, 30);
-    realSense.config.enable_stream(RS2_STREAM_INFRARED, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Y8, 30);
     realSense.config.enable_device(deviceList[id].serial);
     realSense.profile = realSense.pipe.start(realSense.config);
 
@@ -245,9 +242,6 @@ bool ofxRealSenseContext::open(ofxRealSense2& realSense, string serial) {
     cout << "IN CONTEXT TRYING TO OPEN DEVICE BY SERIAL: " << serial << endl;
 
     int index = getDeviceIndex(serial);
-    realSense.config.enable_stream(RS2_STREAM_COLOR, COLOR_WIDTH, COLOR_HEIGHT, RS2_FORMAT_RGB8, 30);
-    realSense.config.enable_stream(RS2_STREAM_DEPTH, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Z16, 30);
-    realSense.config.enable_stream(RS2_STREAM_INFRARED, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Y8, 30);
     realSense.config.enable_device(serial);
     realSense.profile = realSense.pipe.start(realSense.config);
 
@@ -262,7 +256,7 @@ bool ofxRealSenseContext::openFromFile(ofxRealSense2& realSense, string filename
 
     cout << "IN CONTEXT TRYING TO OPEN DEVICE FROM FILE: " << filename << endl;
 
-    realSense.config.enable_stream(RS2_STREAM_DEPTH, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Z16, 30);
+    // realSense.config.enable_stream(RS2_STREAM_DEPTH, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Z16, 30);
     realSense.config.enable_device_from_file(filename);
     realSense.profile = realSense.pipe.start(realSense.config); //File will be opened in read mode at this point
     auto device = realSense.pipe.get_active_profile().get_device();

@@ -31,6 +31,7 @@
 ==============================================================================*/
 #pragma once
 
+#include <vector>
 #include <cmath>
 #include <string>
 #include <map>
@@ -38,11 +39,6 @@
 #include "rs.h"
 #include "rs.hpp"
 #include "rsutil.h"
-
-#define COLOR_WIDTH 1280
-#define COLOR_HEIGHT 720
-#define DEPTH_WIDTH 1280
-#define DEPTH_HEIGHT 720
 
 #if defined(_MSC_VER) || defined(_WIN32) || defined(WIN32) || defined(__MINGW32__)
     // do windows stuff
@@ -63,6 +59,9 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         virtual ~ofxRealSense2();
 
         bool init(bool infrared=false, bool video=true, bool texture=true);
+
+        void setDepthDimensions(int width, int height);
+        void setColorDimensions(int width, int height);
 
         void initFilters();
 
@@ -121,7 +120,7 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         /// get the calulated distance for a depth point
         float getDistanceAt(int x, int y) const;
         float getDistanceAt(const ofPoint & p) const;
-        
+
         /// calculates the coordinate in the world for the depth point (perspective calculation)
         ///
         /// center of image is (0.0)
@@ -225,11 +224,14 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
         string getSerial() const;
 
-        /// static kinect image size
-        const static int width = 1280;
-        const static int height = 720;
-        float getHeight() const;
-        float getWidth() const;
+        int depthWidth;
+        int depthHeight;
+        float getDepthHeight() const;
+        float getDepthWidth() const;
+        int colorWidth;
+        int colorHeight;
+        float getColorWidth() const;
+        float getColorHeight() const;
 
         /// \section Static global kinect context functions
 

@@ -32,7 +32,7 @@ ofxRealSenseContext ofxRealSense2::realSenseContext;
 float ofxRealSense2::reconnectWaitTime = 3.0;
 
 
-ofxRealSense2::ofxRealSense2(){
+ofxRealSense2::ofxRealSense2() {
   ofLogVerbose("ofxRealSense2") << "creating ofxRealSense2";
 
   deviceId = -1;
@@ -67,13 +67,17 @@ ofxRealSense2::ofxRealSense2(){
 
   pixelFormat = OF_PIXELS_RGB;
 
-  //setDepthClipping();
-
   nearClipping = 0.0;
   farClipping = 6.0;
+
+  depthWidth = 1280;
+  depthHeight = 720;
+
+  colorWidth = 1280;
+  colorHeight = 720;
 }
 
-ofxRealSense2::~ofxRealSense2(){
+ofxRealSense2::~ofxRealSense2() {
   // close? clear?
   close();
 }
@@ -85,37 +89,38 @@ bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
     bUseTexture = texture;
 
     // set configuration
-    if(bGrabVideo){
-        config.enable_stream(RS2_STREAM_COLOR, COLOR_WIDTH, COLOR_HEIGHT, RS2_FORMAT_RGB8, 30);
-        colorImage.allocate(COLOR_WIDTH, COLOR_HEIGHT, OF_IMAGE_COLOR);
+    if (bGrabVideo) {
+        config.enable_stream(RS2_STREAM_COLOR, colorWidth, colorHeight, RS2_FORMAT_RGB8, 30);
+        colorImage.allocate(colorWidth, colorHeight, OF_IMAGE_COLOR);
         videoPixels.set(0);
         videoPixelsBack.set(0);
     }
 
-    if(bUseDepth){
-        config.enable_stream(RS2_STREAM_DEPTH, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Z16, 30);
-        depthImage.allocate(DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_COLOR);
+    if (bUseDepth) {
+        config.enable_stream(RS2_STREAM_DEPTH, depthWidth, depthHeight, RS2_FORMAT_Z16, 30);
+        depthImage.allocate(depthWidth, depthHeight, OF_IMAGE_COLOR);
+        depthPixels.allocate(depthWidth, depthHeight, OF_IMAGE_COLOR);
         depthPixels.set(0);
         distancePixels.set(0);
         initFilters();
     }
 
-    if(bUseInfrared) {
-        config.enable_stream(RS2_STREAM_INFRARED, DEPTH_WIDTH, DEPTH_HEIGHT, RS2_FORMAT_Y8, 30);
-        infraredImage.allocate(DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
+    if (bUseInfrared) {
+        config.enable_stream(RS2_STREAM_INFRARED, depthWidth, depthHeight, RS2_FORMAT_Y8, 30);
+        infraredImage.allocate(depthWidth, depthHeight, OF_IMAGE_GRAYSCALE);
         depthPixelsRaw.set(0);
         depthPixelsRawBack.set(0);
     }
 
-    if(bUseTexture) {
+    if (bUseTexture) {
         depthTex.allocate(depthPixels);
         videoTex.allocate(videoPixels);
         infraredTex.allocate(infraredPixels);
     }
 
-    if(!realSenseContext.isInited()) {
+    if (!realSenseContext.isInited()) {
 
-        if(!realSenseContext.init()) {
+        if (!realSenseContext.init()) {
             return false;
         }
     }
@@ -128,8 +133,26 @@ bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
     return bGrabberInited;
 }
 
+void ofxRealSense2::setDepthDimensions(int width, int height) {
+    config.enable_stream(RS2_STREAM_DEPTH, width, height, RS2_FORMAT_Z16, 30);
+    depthImage.allocate(width, height, OF_IMAGE_COLOR);
+    depthWidth = width;
+    depthHeight = height;
+    depthPixels.set(0);
+    distancePixels.set(0);
+}
+
+void ofxRealSense2::setColorDimensions(int width, int height) {
+    config.enable_stream(RS2_STREAM_COLOR, width, height, RS2_FORMAT_RGB8, 30);
+    colorImage.allocate(width, height, OF_IMAGE_COLOR);
+    colorWidth = width;
+    colorHeight = height;
+    videoPixels.set(0);
+    videoPixelsBack.set(0);
+}
+
 void ofxRealSense2::clear() {
-    if(isConnected()) {
+    if (isConnected()) {
         ofLogWarning("ofxRealSense2") << "clear(): do not call clear while ofxRealSense2 is running!";
         return;
     }
@@ -147,7 +170,6 @@ void ofxRealSense2::clear() {
     videoTex.clear();
 
     bGrabberInited = false;
-
 }
 
 void ofxRealSense2::initFilters() {
@@ -155,9 +177,9 @@ void ofxRealSense2::initFilters() {
     // Decimation - reduces depth frame density
     filters.emplace_back("decimation", decimationFilter);
 
-    //complicates the filter logic and doesn't seem useful
-    //rs2::disparity_transform depth_to_disparity(true);
-    //filters.emplace_back(depth_to_disparity, false);
+    // complicates the filter logic and doesn't seem useful
+    // rs2::disparity_transform depth_to_disparity(true);
+    // filters.emplace_back(depth_to_disparity, false);
 
     // Spatial    - edge-preserving spatial smoothing
     filters.emplace_back("spatial", spatialFilter);
@@ -165,7 +187,7 @@ void ofxRealSense2::initFilters() {
     // Temporal   - reduces temporal noise
     filters.emplace_back("temporal", temporalFilter);
 
-    //Hole Filling
+    // Hole Filling
     filters.emplace_back("hole filling", holeFillingFilter);
 }
 
@@ -192,19 +214,19 @@ void ofxRealSense2::setRegistration(bool bUseRegistration) {
 }
 
 bool ofxRealSense2::open(int deviceIndex) {
-    if(!bGrabberInited) {
+    if (!bGrabberInited) {
         ofLogWarning("ofxRealSense2") << "open(): cannot open, init not called";
         return false;
     }
 
-    //we need to find the device id from the device list index.
-    //as the first device id could be 1 and not 0 when the device list is sorted by serial
+    // we need to find the device id from the device list index.
+    // as the first device id could be 1 and not 0 when the device list is sorted by serial
     int deviceIDFromIndex = -1;
-    if( deviceIndex > -1 ){
+    if (deviceIndex > -1) {
         deviceIDFromIndex = realSenseContext.getDeviceId(deviceIndex);
     }
 
-    if(!realSenseContext.open(*this, deviceIDFromIndex)) {
+    if (!realSenseContext.open(*this, deviceIDFromIndex)) {
         return false;
     }
 
@@ -220,12 +242,12 @@ bool ofxRealSense2::open(int deviceIndex) {
 }
 
 bool ofxRealSense2::open(string serial) {
-    if(!bGrabberInited) {
+    if (!bGrabberInited) {
         ofLogVerbose("ofxRealSense") << "open(): cannot open, init not called";
         return false;
     }
 
-    if(!realSenseContext.open(*this, serial)) {
+    if (!realSenseContext.open(*this, serial)) {
         return false;
     }
 
@@ -241,12 +263,12 @@ bool ofxRealSense2::open(string serial) {
 }
 
 bool ofxRealSense2::openFromFile(string filename) {
-    if(!bGrabberInited) {
+    if (!bGrabberInited) {
         ofLogVerbose("ofxRealSense") << "open(): cannot open, init not called";
         return false;
     }
 
-    if(!realSenseContext.openFromFile(*this, filename)) {
+    if (!realSenseContext.openFromFile(*this, filename)) {
         return false;
     }
 
@@ -262,10 +284,10 @@ bool ofxRealSense2::openFromFile(string filename) {
 }
 
 void ofxRealSense2::close() {
-    if(isThreadRunning()) {
+    if (isThreadRunning()) {
         stopThread();
         ofSleepMillis(10);
-        waitForThread(false,5000);
+        waitForThread(false, 5000);
     }
 
     deviceId = -1;
@@ -279,53 +301,53 @@ void ofxRealSense2::close() {
 }
 
 //---------------------------------------------------------------------------
-bool ofxRealSense2::isConnected() const{
+bool ofxRealSense2::isConnected() const {
     return isThreadRunning();
 }
 
 //---------------------------------------------------------------------------
-bool ofxRealSense2::isInitialized() const{
+bool ofxRealSense2::isInitialized() const {
     return realSenseContext.isInited();
 }
 
 //--------------------------------------------------------------------
-bool ofxRealSense2::isFrameNew()  const{
+bool ofxRealSense2::isFrameNew()  const {
     return isFrameNewVideo() || isFrameNewDepth();
 }
 
 //--------------------------------------------------------------------
-bool ofxRealSense2::isFrameNewVideo() const{
+bool ofxRealSense2::isFrameNewVideo() const {
     return bIsFrameNewVideo;
 }
 
 //--------------------------------------------------------------------
-bool ofxRealSense2::isFrameNewDepth() const{
+bool ofxRealSense2::isFrameNewDepth() const {
     return bIsFrameNewDepth;
 }
 
 //--------------------------------------------------------------------
-bool ofxRealSense2::setPixelFormat(ofPixelFormat pixelFormat){
-    if(!bIsVideoInfrared && pixelFormat==OF_PIXELS_RGB){
+bool ofxRealSense2::setPixelFormat(ofPixelFormat pixelFormat) {
+    if (!bIsVideoInfrared && pixelFormat == OF_PIXELS_RGB) {
         return true;
-    }else if(pixelFormat == OF_PIXELS_GRAY){
+    } else if (pixelFormat == OF_PIXELS_GRAY) {
         return true;
-    }else{
+    } else {
         return false;
     }
 }
 
 //--------------------------------------------------------------------
-ofPixelFormat ofxRealSense2::getPixelFormat() const{
-    if(!bIsVideoInfrared){
+ofPixelFormat ofxRealSense2::getPixelFormat() const {
+    if (!bIsVideoInfrared) {
         return OF_PIXELS_RGB;
-    }else{
+    } else {
         return OF_PIXELS_GRAY;
     }
 }
 
 //----------------------------------------------------------
 void ofxRealSense2::update() {
-    if(!bGrabberInited) {
+    if (!bGrabberInited) {
         return;
     }
 
@@ -333,54 +355,31 @@ void ofxRealSense2::update() {
 
     // - Start handle reconnection
 
-    //we need to do timing for reconnection based on the first update call
-    //as a project with a long setup call could exceed the reconnectWaitTime and create a false positive
-    //we also need to not try reconnection if the camera is tilting as this can shutoff the data coming in and cause a false positive.
-    if( bFirstUpdate){
+    // we need to do timing for reconnection based on the first update call
+    // as a project with a long setup call could exceed the reconnectWaitTime and create a false positive
+    // we also need to not try reconnection if the camera is tilting as this can shutoff the data coming in and cause a false positive.
+    if (bFirstUpdate) {
         timeSinceOpen = ofGetElapsedTimef();
         bFirstUpdate = false;
     }
 
-    //if we aren't grabbing the video stream we don't need to check for video
+    // if we aren't grabbing the video stream we don't need to check for video
     bool bVideoOkay = true;
-    if( bGrabVideo ){
+    if (bGrabVideo) {
         bVideoOkay = bGotDataVideo;
-        if( bNeedsUpdateVideo ){
+        if (bNeedsUpdateVideo) {
             bVideoOkay = true;
             bGotDataVideo = true;
         }
     }
 
-    if( bNeedsUpdateDepth ){
+    if (bNeedsUpdateDepth) {
         bGotDataDepth = true;
     }
 
-    //try reconnect if we don't have color coming in or if we don't have depth coming in
-//    if( (!bVideoOkay || !bGotDataDepth ) && tryCount < 5 && ofGetElapsedTimef() - timeSinceOpen > reconnectWaitTime ){
-//        close();
-//        ofLogWarning("ofxKinect") << "update(): device " << lastDeviceIndex << " isn't delivering data. depth: " << bGotDataDepth << " color: " << bGotDataVideo <<"  , reconnecting tries: " << tryCount+1;
-//        realSenseContext.buildDeviceList();
-//        open(lastDeviceIndex);
-//        tryCount++;
-//        timeSinceOpen = ofGetElapsedTimef();
-//    }
-
-    // - End handle reconnection
-
-    //rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
-    
-    // aligns the depth and color frame
-    //rs2_stream align_to = RS2_STREAM_COLOR;
-    //rs2::align align(align_to);
-    //rs2::frameset processed = align.process(data);
-    
-    //allset = processed;
-
-    //intr = data.get_profile().as<rs2::video_stream_profile>().get_intrinsics();
-
-    if(videoQueue.poll_for_frame(&color)) {
-        if(color.get_data()) {
-            videoPixels.setFromPixels((unsigned char *)color.get_data(), COLOR_WIDTH, COLOR_HEIGHT, OF_IMAGE_COLOR);
+    if (videoQueue.poll_for_frame(&color)) {
+        if (color.get_data()) {
+            videoPixels.setFromPixels((unsigned char *)color.get_data(), colorWidth, colorHeight, OF_IMAGE_COLOR);
             videoTex.loadData(videoPixels);
         }
     }
@@ -388,28 +387,29 @@ void ofxRealSense2::update() {
     rs2::frame f;
     if (filteredDepthQueue.poll_for_frame(&f)) { // Try to take the depth from the queue
         depth = color_map.process(f);     // Colorize the depth frame with a color map
+        depthWidth = depth.as<rs2::video_frame>().get_width(); // dimensions change if we decimate
+        depthHeight = depth.as<rs2::video_frame>().get_height();
     }
 
-    if(depth) {
+    if (depth) {
         if (depth.get_data()) {
 //          depthPixelsRaw.setFromPixels((unsigned char *)depth.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
-            depthPixels.setFromPixels((unsigned char *)depth.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_COLOR);
+            depthPixels.setFromPixels((unsigned char *)depth.get_data(), depthWidth, depthHeight, OF_IMAGE_COLOR);
             depthTex.loadData(depthPixels);
             bIsFrameNewDepth = true;
         }
     }
 
-    if(infraredQueue.poll_for_frame(&infrared)) {
+    if (infraredQueue.poll_for_frame(&infrared)) {
         if (infrared.get_data()) {
-            infraredPixels.setFromPixels((unsigned char *)infrared.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
+            infraredPixels.setFromPixels((unsigned char *)infrared.get_data(), depthWidth, depthHeight, OF_IMAGE_GRAYSCALE);
             infraredTex.loadData(infraredPixels);
         }
     }
-
 }
 
 //------------------------------------
-float ofxRealSense2::getDistanceAt(int x, int y)  const{
+float ofxRealSense2::getDistanceAt(int x, int y)  const {
 
     rs2::depth_frame temp = allset.get_depth_frame();
     return temp.get_distance(x, y);
@@ -418,17 +418,17 @@ float ofxRealSense2::getDistanceAt(int x, int y)  const{
 }
 
 //------------------------------------
-float ofxRealSense2::getDistanceAt(const ofPoint & p)  const{
+float ofxRealSense2::getDistanceAt(const ofPoint & p)  const {
     return getDistanceAt(p.x, p.y);
 }
 
 //------------------------------------
-ofVec3f ofxRealSense2::getWorldCoordinateAt(int x, int y)  const{
+ofVec3f ofxRealSense2::getWorldCoordinateAt(int x, int y)  const {
     return getWorldCoordinateAt(x, y, getDistanceAt(x, y));
 }
 
 //------------------------------------
-ofVec3f ofxRealSense2::getWorldCoordinateAt(float cx, float cy, float wz)  const{
+ofVec3f ofxRealSense2::getWorldCoordinateAt(float cx, float cy, float wz)  const {
     float point[3];
     float pixel[2]{ cx, cy };
 
@@ -437,8 +437,8 @@ ofVec3f ofxRealSense2::getWorldCoordinateAt(float cx, float cy, float wz)  const
 }
 
 //------------------------------------
-ofColor ofxRealSense2::getColorAt(int x, int y)  const{
-    int index = (y * width + x) * videoBytesPerPixel;
+ofColor ofxRealSense2::getColorAt(int x, int y)  const {
+    int index = (y * colorWidth + x) * videoBytesPerPixel;
     ofColor c;
     c.r = videoPixels[index + 0];
     c.g = videoPixels[index + (videoBytesPerPixel-1)/2];
@@ -486,32 +486,32 @@ const ofFloatPixels & ofxRealSense2::getDistancePixels() const {
 }
 
 //------------------------------------
-ofTexture& ofxRealSense2::getTexture(){
-    if(!videoTex.isAllocated()){
+ofTexture& ofxRealSense2::getTexture() {
+    if (!videoTex.isAllocated()) {
         ofLogWarning("ofxRealSense2") << "getTexture(): device " << deviceId << " video texture not allocated";
     }
     return videoTex;
 }
 
 //---------------------------------------------------------------------------
-ofTexture& ofxRealSense2::getDepthTexture(){
-    if(!depthTex.isAllocated()){
+ofTexture& ofxRealSense2::getDepthTexture() {
+    if (!depthTex.isAllocated()) {
         ofLogWarning("ofxRealSense2") << "getDepthTexture(): device " << deviceId << " depth texture not allocated";
     }
     return depthTex;
 }
 
 //------------------------------------
-const ofTexture& ofxRealSense2::getTexture() const{
-    if(!videoTex.isAllocated()){
+const ofTexture& ofxRealSense2::getTexture() const {
+    if (!videoTex.isAllocated()) {
         ofLogWarning("ofxRealSense2") << "getTexture(): device " << deviceId << " video texture not allocated";
     }
     return videoTex;
 }
 
 //---------------------------------------------------------------------------
-const ofTexture& ofxRealSense2::getDepthTexture() const{
-    if(!depthTex.isAllocated()){
+const ofTexture& ofxRealSense2::getDepthTexture() const {
+    if (!depthTex.isAllocated()) {
         ofLogWarning("ofxRealSense2") << "getDepthTexture(): device " << deviceId << " depth texture not allocated";
     }
     return depthTex;
@@ -524,7 +524,7 @@ void ofxRealSense2::enableDepthNearValueWhite(bool bEnabled) {
 }
 
 //---------------------------------------------------------------------------
-bool ofxRealSense2::isDepthNearValueWhite() const{
+bool ofxRealSense2::isDepthNearValueWhite() const {
     return bNearWhite;
 }
 
@@ -533,46 +533,34 @@ void ofxRealSense2::setHighAccuracyPreset() {
     std::cout << "Setting Depth Preset: " << std::string(sensor.get_option_value_description(RS2_OPTION_VISUAL_PRESET, 3.0f)) << endl;
     sensor.set_option(RS2_OPTION_VISUAL_PRESET, 3.0f);
 }
-/*---------------------------------------------------------------------------
-void ofxRealSense2::setDepthClipping(float nearClip, float farClip) {
-	nearClipping = nearClip;
-	farClipping = farClip;
-	updateDepthLookupTable();
-}*/
 
 //---------------------------------------------------------------------------
-float ofxRealSense2::getClippingOptionMin() const{
-
-    //auto depthSensor = profile.get_device().first<rs2::depth_sensor>();
+float ofxRealSense2::getClippingOptionMin() const {
     auto range = color_map.get_option_range(RS2_OPTION_MIN_DISTANCE);
 
     return range.min;
 }
 
 //---------------------------------------------------------------------------
-float ofxRealSense2::getClippingOptionMax() const{
-
-    //auto depthSensor = profile.get_device().first<rs2::depth_sensor>();
+float ofxRealSense2::getClippingOptionMax() const {
     auto range = color_map.get_option_range(RS2_OPTION_MAX_DISTANCE);
 
     return range.max;
 }
 
-float ofxRealSense2::getClippingOptionStep() const{
-
-    //auto depthSensor = profile.get_device().first<rs2::depth_sensor>();
-    auto range = color_map.get_option_range(RS2_OPTION_MAX_DISTANCE); //same for both
+float ofxRealSense2::getClippingOptionStep() const {
+    auto range = color_map.get_option_range(RS2_OPTION_MAX_DISTANCE); // same for both
 
     return range.step;
 }
 
 //---------------------------------------------------------------------------
-float ofxRealSense2::getNearClipping() const{
+float ofxRealSense2::getNearClipping() const {
     return nearClipping;
 }
 
 //---------------------------------------------------------------------------
-float ofxRealSense2::getFarClipping() const{
+float ofxRealSense2::getFarClipping() const {
     return farClipping;
 }
 
@@ -580,7 +568,6 @@ float ofxRealSense2::getFarClipping() const{
 void ofxRealSense2::setNearClipping(float value) {
 
     if (value < farClipping) {
-        //auto depthSensor = profile.get_device().first<rs2::depth_sensor>();
         color_map.set_option(RS2_OPTION_MIN_DISTANCE, value);
         nearClipping = value;
     } else {
@@ -592,7 +579,6 @@ void ofxRealSense2::setNearClipping(float value) {
 void ofxRealSense2::setFarClipping(float value) {
 
     if (value > nearClipping) {
-        //auto depthSensor = profile.get_device().first<rs2::depth_sensor>();
         color_map.set_option(RS2_OPTION_MAX_DISTANCE, value);
         farClipping = value;
     } else {
@@ -601,123 +587,128 @@ void ofxRealSense2::setFarClipping(float value) {
 }
 
 //---------------------------------------------------------------------------
-void ofxRealSense2::setUseTexture(bool bUse){
+void ofxRealSense2::setUseTexture(bool bUse) {
     bUseTexture = bUse;
 }
 
 //------------------------------------
-bool ofxRealSense2::isUsingTexture() const{
+bool ofxRealSense2::isUsingTexture() const {
     return bUseTexture;
 }
 
 //----------------------------------------------------------
-void ofxRealSense2::draw(float _x, float _y, float _w, float _h) const{
-    if(bUseTexture && bGrabVideo) {
+void ofxRealSense2::draw(float _x, float _y, float _w, float _h) const {
+    if (bUseTexture && bGrabVideo) {
         videoTex.draw(_x, _y, _w, _h);
     }
-    // test
-//    colorImage.draw(_x, _y, _w, _h);
 }
 
 //----------------------------------------------------------
-void ofxRealSense2::draw(float _x, float _y) const{
-    draw(_x, _y, (float)width, (float)height);
+void ofxRealSense2::draw(float _x, float _y) const {
+    draw(_x, _y, static_cast<float>(depthWidth), static_cast<float>(depthHeight));
 }
 
 //----------------------------------------------------------
-void ofxRealSense2::draw(const ofPoint & point) const{
+void ofxRealSense2::draw(const ofPoint & point) const {
     draw(point.x, point.y);
 }
 
 //----------------------------------------------------------
-void ofxRealSense2::draw(const ofRectangle & rect) const{
+void ofxRealSense2::draw(const ofRectangle & rect) const {
     draw(rect.x, rect.y, rect.width, rect.height);
 }
 
 //----------------------------------------------------------
-void ofxRealSense2::drawDepth(float _x, float _y, float _w, float _h) const{
-    if(bUseTexture) {
+void ofxRealSense2::drawDepth(float _x, float _y, float _w, float _h) const {
+    if (bUseTexture) {
         depthTex.draw(_x, _y, _w, _h);
     }
 }
 
 //---------------------------------------------------------------------------
-void ofxRealSense2::drawDepth(float _x, float _y) const{
-    drawDepth(_x, _y, (float)width, (float)height);
+void ofxRealSense2::drawDepth(float _x, float _y) const {
+    drawDepth(_x, _y, static_cast<float>(depthWidth), static_cast<float>(depthHeight));
 }
 
 //----------------------------------------------------------
-void ofxRealSense2::drawDepth(const ofPoint & point) const{
+void ofxRealSense2::drawDepth(const ofPoint & point) const {
     drawDepth(point.x, point.y);
 }
 
 //----------------------------------------------------------
-void ofxRealSense2::drawDepth(const ofRectangle & rect) const{
+void ofxRealSense2::drawDepth(const ofRectangle & rect) const {
     drawDepth(rect.x, rect.y, rect.width, rect.height);
 }
 
 //----------------------------------------------------------
-void ofxRealSense2::drawIR(float _x, float _y, float _w, float _h) const{
+void ofxRealSense2::drawIR(float _x, float _y, float _w, float _h) const {
     infraredTex.draw(_x, _y, _w, _h);
-//    infraredImage.draw(_x, _y, _w, _h);
 }
 //---------------------------------------------------------------------------
-void ofxRealSense2::drawIR(float _x, float _y) const{
-    drawIR(_x, _y, (float)DEPTH_WIDTH, (float)DEPTH_HEIGHT);
+void ofxRealSense2::drawIR(float _x, float _y) const {
+    drawIR(_x, _y, static_cast<float>(depthWidth), static_cast<float>(depthHeight));
 }
 //----------------------------------------------------------
-void ofxRealSense2::drawIR(const ofPoint & point) const{
+void ofxRealSense2::drawIR(const ofPoint & point) const {
     drawIR(point.x, point.y);
 }
 //----------------------------------------------------------
-void ofxRealSense2::drawIR(const ofRectangle & rect) const{
+void ofxRealSense2::drawIR(const ofRectangle & rect) const {
     drawIR(rect.x, rect.y, rect.width, rect.height);
 }
 //----------------------------------------------------------
-void ofxRealSense2::generatePointCloud(){
-    if(depth){
+void ofxRealSense2::generatePointCloud() {
+    if (depth) {
         points = pointCloud.calculate(depth);
-        
+
         if (color) {
             pointCloud.map_to(color);
-        }
-        else if (infrared) {
+        } else if (infrared) {
             pointCloud.map_to(infrared);
         }
     }
 }
 //----------------------------------------------------------
-void ofxRealSense2::drawPointCloud(float width, float height, rs2::points& points){
-    if(depth){
+void ofxRealSense2::drawPointCloud(float width, float height, rs2::points& points) {
+    if (depth) {
         points = pointCloud.calculate(depth);
-        
+
         if (color) {
             pointCloud.map_to(color);
-        }
-        else if (infrared) {
+        } else if (infrared) {
             pointCloud.map_to(infrared);
         }
     }
 }
 
 //---------------------------------------------------------------------------
-int ofxRealSense2::getDeviceId() const{
+int ofxRealSense2::getDeviceId() const {
     return deviceId;
 }
 
 //---------------------------------------------------------------------------
-string ofxRealSense2::getSerial() const{
+string ofxRealSense2::getSerial() const {
     return serial;
 }
 
 //----------------------------------------------------------
-float ofxRealSense2::getHeight() const{
-    return (float) height;
+float ofxRealSense2::getDepthHeight() const {
+    return static_cast<float>(depthHeight);
 }
 
 //---------------------------------------------------------------------------
-float ofxRealSense2::getWidth() const{
-    return (float) width;
+float ofxRealSense2::getDepthWidth() const {
+    return static_cast<float>(depthWidth);
+}
+
+//----------------------------------------------------------
+float ofxRealSense2::getColorHeight() const {
+    return static_cast<float>(colorHeight);
+}
+
+//---------------------------------------------------------------------------
+float ofxRealSense2::getColorWidth() const {
+    return static_cast<float>(colorWidth);
 }
 
 //----------------------------------------------------------
@@ -780,18 +771,18 @@ void ofxRealSense2::updateDepthLookupTable() {
     unsigned int maxDepthLevels = 10001;
     depthLookupTable.resize(maxDepthLevels);
     depthLookupTable[0] = 0;
-    for(unsigned int i = 1; i < maxDepthLevels; i++) {
+    for (unsigned int i = 1; i < maxDepthLevels; i++) {
         depthLookupTable[i] = ofMap(i, nearClipping, farClipping, nearColor, farColor, true);
     }
 }
 
 //----------------------------------------------------------
 void ofxRealSense2::updateDepthPixels() {
-    int n = width * height;
-    for(int i = 0; i < n; i++) {
+    int n = depthWidth * depthHeight;
+    for (int i = 0; i < n; i++) {
         distancePixels[i] = depthPixelsRaw[i];
     }
-    for(int i = 0; i < n; i++) {
+    for (int i = 0; i < n; i++) {
         depthPixels[i] = depthLookupTable[depthPixelsRaw[i]];
     }
 }
@@ -801,9 +792,9 @@ void ofxRealSense2::grabDepthFrame(rs2::device *dev, void *depth, uint32_t times
 
     ofxRealSense2* realSense = realSenseContext.getRealSense(dev);
 
-    if(realSense->realSenseDevice == dev) {
+    if (realSense->realSenseDevice == dev) {
         realSense->lock();
-        swap(realSense->depthPixelsRawBack,realSense->depthPixelsRawIntra);
+        swap(realSense->depthPixelsRawBack, realSense->depthPixelsRawIntra);
         realSense->bNeedsUpdateDepth = true;
         realSense->unlock();
     // is there an analogue
@@ -816,9 +807,9 @@ void ofxRealSense2::grabVideoFrame(rs2::device *dev, void *video, uint32_t times
 
     ofxRealSense2* realSense = realSenseContext.getRealSense(dev);
 
-    if(realSense->realSenseDevice == dev) {
+    if (realSense->realSenseDevice == dev) {
         realSense->lock();
-        swap(realSense->videoPixelsBack,realSense->videoPixelsIntra);
+        swap(realSense->videoPixelsBack, realSense->videoPixelsIntra);
         realSense->bNeedsUpdateVideo = true;
         realSense->unlock();
     // see if there is an analogue
@@ -831,18 +822,14 @@ void ofxRealSense2::threadedFunction() {
     while (isThreadRunning()) {
 
         rs2::frameset data = pipe.wait_for_frames(); // Wait for next set of frames from the camera
-        rs2::frame depth_frame = data.get_depth_frame(); //Take the depth frame from the frameset
+        rs2::depth_frame depth_frame = data.get_depth_frame(); // Take the depth frame from the frameset
         if (!depth_frame) // Should not happen but if the pipeline is configured differently
             return;       //  it might not provide depth and we don't want to crash
 
         rs2::frame filtered = depth_frame; // Does not copy the frame, only adds a reference
 
-        for (auto&& filter : filters)
-        {
-            // cout << filter.is_enabled << std::endl;
-            if (filter.is_enabled)
-            {
-                // cout << "APPLYING " << filter.name << std::endl;
+        for (auto&& filter : filters) {
+            if (filter.is_enabled) {
                 filtered = filter.filterBlock.process(filtered);
             }
         }
@@ -853,15 +840,15 @@ void ofxRealSense2::threadedFunction() {
         //  To make sure they are synchronized you need to push them together or add some
         //  synchronization mechanisms
 
+        // int w = filtered.as<rs2::video_frame>().get_width();
+        // ofLog(OF_LOG_WARNING, "FILTERED WIDTH " + to_string(w));
         filteredDepthQueue.enqueue(filtered);
-        //rawDepthQueue.enqueue(depth_frame);
+        // rawDepthQueue.enqueue(depth_frame);
 
-        //pass through video and ir frames unaltered
+        // pass through video and ir frames unaltered
         if (bGrabVideo)
             videoQueue.enqueue(data.get_color_frame());
         if (bUseInfrared)
             infraredQueue.enqueue(data.get_infrared_frame());
     }
 }
-
-
