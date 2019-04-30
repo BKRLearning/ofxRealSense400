@@ -152,7 +152,7 @@ bool ofxRealSense2::initDepth(int width, int height) {
     return bGrabberInited;
 }
 
-void ofxRealSense2::initColor(int width, int height) {
+bool ofxRealSense2::initColor(int width, int height) {
     config.enable_stream(RS2_STREAM_COLOR, width, height, RS2_FORMAT_RGB8, 30);
     colorImage.allocate(width, height, OF_IMAGE_COLOR);
     colorWidth = width;
