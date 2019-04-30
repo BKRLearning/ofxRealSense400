@@ -60,8 +60,9 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
         bool init(bool infrared=false, bool video=true, bool texture=true);
 
-        void setDepthDimensions(int width, int height);
-        void setColorDimensions(int width, int height);
+        bool initDepth(int width, int height);
+        bool initColor(int width, int height);
+        bool initInfrared(int width, int height);
 
         void initFilters();
 

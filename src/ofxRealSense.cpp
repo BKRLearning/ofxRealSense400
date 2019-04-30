@@ -125,6 +125,25 @@ bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
         }
     }
 
+    bGrabberInited = true;
+    return bGrabberInited;
+}
+
+bool ofxRealSense2::initDepth(int width, int height) {
+    config.enable_stream(RS2_STREAM_DEPTH, width, height, RS2_FORMAT_Z16, 30);
+    depthImage.allocate(width, height, OF_IMAGE_COLOR);
+    depthWidth = width;
+    depthHeight = height;
+    depthPixels.set(0);
+    distancePixels.set(0);
+
+    if (!realSenseContext.isInited()) {
+
+        if (!realSenseContext.init()) {
+            return false;
+        }
+    }
+
     color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0.f);
     color_map.set_option(RS2_OPTION_VISUAL_PRESET, 3.f);
     color_map.set_option(RS2_OPTION_COLOR_SCHEME, 2.f);
@@ -133,22 +152,38 @@ bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
     return bGrabberInited;
 }
 
-void ofxRealSense2::setDepthDimensions(int width, int height) {
-    config.enable_stream(RS2_STREAM_DEPTH, width, height, RS2_FORMAT_Z16, 30);
-    depthImage.allocate(width, height, OF_IMAGE_COLOR);
-    depthWidth = width;
-    depthHeight = height;
-    depthPixels.set(0);
-    distancePixels.set(0);
-}
-
-void ofxRealSense2::setColorDimensions(int width, int height) {
+void ofxRealSense2::initColor(int width, int height) {
     config.enable_stream(RS2_STREAM_COLOR, width, height, RS2_FORMAT_RGB8, 30);
     colorImage.allocate(width, height, OF_IMAGE_COLOR);
     colorWidth = width;
     colorHeight = height;
     videoPixels.set(0);
     videoPixelsBack.set(0);
+
+    if (!realSenseContext.isInited()) {
+
+        if (!realSenseContext.init()) {
+            return false;
+        }
+    }
+    bGrabberInited = true;
+    return bGrabberInited;
+}
+
+bool ofxRealSense2::initInfrared(int width, int height) {
+    config.enable_stream(RS2_STREAM_INFRARED, width, height, RS2_FORMAT_Y8, 30);
+    infraredImage.allocate(width, height, OF_IMAGE_GRAYSCALE);
+    depthPixelsRaw.set(0);
+    depthPixelsRawBack.set(0);
+
+    if (!realSenseContext.isInited()) {
+
+        if (!realSenseContext.init()) {
+            return false;
+        }
+    }
+    bGrabberInited = true;
+    return bGrabberInited;
 }
 
 void ofxRealSense2::clear() {
