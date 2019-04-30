@@ -136,6 +136,7 @@ bool ofxRealSense2::initDepth(int width, int height) {
     depthHeight = height;
     depthPixels.set(0);
     distancePixels.set(0);
+    initFilters();
 
     if (!realSenseContext.isInited()) {
 
