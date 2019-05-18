@@ -678,6 +678,15 @@ ofxRealSense2* ofxRealSenseContext::getRealSense(rs2::device* dev) {
     return NULL;
 }
 
+ofxRealSense2* ofxRealSenseContext::getRealSense(string serial) {
+    std::map<int,ofxRealSense2*>::iterator iter;
+    for (iter = realSenses.begin(); iter != realSenses.end(); ++iter) {
+        if(iter->second->getSerial() == serial)
+            return iter->second;
+    }
+    return NULL;
+}
+
 int ofxRealSenseContext::getDeviceIndex(int id) {
     for(size_t i = 0; i < deviceList.size(); ++i) {
         if(deviceList[i].id == id)
@@ -723,6 +732,29 @@ bool ofxRealSenseContext::isConnected(string serial) {
             return true;
     }
     return false;
+}
+
+map<string, bool> ofxRealSenseContext::getDeviceStatusMap(map<string, string> serialMap) {
+    auto devices = realSenseContext->query_devices();
+    size_t deviceCount = devices.size();
+
+    map<string, bool> statusMap;
+    for (auto&& serial : serialMap) {
+        bool bFound = false;
+        for (auto device : devices) {
+            try {
+                string deviceSerial = device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+                ofxRealSense2* rsPtr = getRealSense(serial.second);
+                if (rsPtr != NULL && rsPtr->isConnected() && serial.second == device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER)) {
+                    bFound = true;
+                }
+            } catch (const std::exception& e) {
+                ofLogWarning("ofxRealSenseContext") << e.what();
+            }
+        }
+        statusMap.emplace(serial.first, bFound);
+    }
+    return statusMap;
 }
 
 int ofxRealSenseContext::nextAvailableId() {

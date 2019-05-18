@@ -86,6 +86,9 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         bool isConnected() const;
         bool isInitialized() const;
 
+        // get status of plugged in devices
+        map<string, bool> getDeviceStatusMap(map<string, string>);
+
         /// is the current frame new?
         bool isFrameNew() const;
         bool isFrameNewVideo() const;

@@ -783,6 +783,11 @@ bool ofxRealSense2::isDeviceConnected(string serial) {
 }
 
 //---------------------------------------------------------------------------
+map<string, bool> ofxRealSense2::getDeviceStatusMap(map<string, string> serialMap) {
+    return realSenseContext.getDeviceStatusMap(serialMap);
+}
+
+//---------------------------------------------------------------------------
 int ofxRealSense2::nextAvailableId() {
     return realSenseContext.nextAvailableId();
 }

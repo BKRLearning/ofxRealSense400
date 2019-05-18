@@ -63,9 +63,13 @@ class ofxRealSenseContext {
     /// get the number of currently connected devices
     int numConnected();
 
-    /// get the kinect object from a device pointer
+    /// get the realsense object from a device pointer
     /// returns NULL if not found
     ofxRealSense2* getRealSense(rs2::device* dev);
+
+    /// get the realsense object from a serial number
+    /// returns NULL if not found
+    ofxRealSense2* getRealSense(string serial);
 
     /// get the deviceList index from an id
     /// returns -1 if not found
@@ -88,6 +92,8 @@ class ofxRealSenseContext {
 
     /// is a device with this serial already connected?
     bool isConnected(string serial);
+
+    map<string, bool> getDeviceStatusMap(map<string, string>);
 
     /// get the id of the next available device,
     /// returns -1 if nothing found
