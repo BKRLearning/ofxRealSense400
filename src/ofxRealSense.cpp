@@ -129,8 +129,8 @@ bool ofxRealSense2::init(bool infrared, bool video, bool texture) {
     return bGrabberInited;
 }
 
-bool ofxRealSense2::initDepth(int width, int height) {
-    config.enable_stream(RS2_STREAM_DEPTH, width, height, RS2_FORMAT_Z16, 30);
+bool ofxRealSense2::initDepth(int width, int height, int fps) {
+    config.enable_stream(RS2_STREAM_DEPTH, width, height, RS2_FORMAT_Z16, fps);
     depthImage.allocate(width, height, OF_IMAGE_COLOR);
     depthWidth = width;
     depthHeight = height;
