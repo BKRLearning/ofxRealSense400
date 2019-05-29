@@ -95,8 +95,6 @@ class ofxRealSenseContext {
     /// is a device with this serial already connected?
     bool isConnected(string serial);
 
-    map<string, bool> getDeviceStatusMap(map<string, string>);
-
     /// get the id of the next available device,
     /// returns -1 if nothing found
     int nextAvailableId();
