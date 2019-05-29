@@ -649,6 +649,22 @@ vector<string> ofxRealSenseContext::getAvailableSerials() {
     return serials;
 }
 
+vector<string> ofxRealSenseContext::getDeviceSerials() {
+    vector<string> serials;
+    auto devices = realSenseContext->query_devices();
+    // size_t deviceCount = devices.size();
+
+    for (auto device : devices) {
+        try {
+            string deviceSerial = device.get_info(RS2_CAMERA_INFO_SERIAL_NUMBER);
+            serials.push_back(deviceSerial);
+        } catch (const std::exception& e) {
+            ofLogWarning("ofxRealSenseContext") << e.what();
+        }
+    }
+    return serials;
+}
+
 int ofxRealSenseContext::numTotal() {
     if(!isInited())
         init();

@@ -242,6 +242,7 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         /// print the device list
         static void listDevices();
 
+        bool checkForSerial(string serial);
         static vector<string> getAvailableSerials();
 
         /// get the total number of devices

@@ -54,6 +54,8 @@ class ofxRealSenseContext {
     // get a vector of all serial numbers
     vector<string> getAvailableSerials();
 
+    vector<string> getDeviceSerials();
+
     /// get the total number of devices
     int numTotal();
 

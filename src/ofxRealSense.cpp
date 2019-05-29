@@ -752,6 +752,19 @@ void ofxRealSense2::listDevices() {
     realSenseContext.listDevices();
 }
 
+bool ofxRealSense2::checkForSerial(string serial) {
+    bool found = false;
+    realSenseContext.buildDeviceList();
+    vector<string> serials = realSenseContext.getDeviceSerials();
+    for (auto&& s : serials) {
+        cout << "Available Serial: " << s << endl;
+        if (s == serial) {
+            found = true;
+        }
+    }
+    return found;
+}
+
 //----------------------------------------------------------
 vector<string> ofxRealSense2::getAvailableSerials() {
     return realSenseContext.getAvailableSerials();
