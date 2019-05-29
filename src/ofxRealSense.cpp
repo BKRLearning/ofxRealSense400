@@ -319,12 +319,18 @@ bool ofxRealSense2::openFromFile(string filename) {
     return true;
 }
 
+void ofxRealSense2::stopPipeline() {
+    pipe.stop();
+}
+
 void ofxRealSense2::close() {
     if (isThreadRunning()) {
         stopThread();
         ofSleepMillis(10);
         waitForThread(false, 5000);
     }
+
+    stopPipeline();
 
     deviceId = -1;
     serial = "";
@@ -754,10 +760,10 @@ void ofxRealSense2::listDevices() {
 
 bool ofxRealSense2::checkForSerial(string serial) {
     bool found = false;
-    realSenseContext.buildDeviceList();
+    // realSenseContext.buildDeviceList();
     vector<string> serials = realSenseContext.getDeviceSerials();
     for (auto&& s : serials) {
-        cout << "Available Serial: " << s << endl;
+        cout << "Found device with serial " << s << endl;
         if (s == serial) {
             found = true;
         }

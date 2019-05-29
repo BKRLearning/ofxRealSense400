@@ -230,13 +230,13 @@ bool ofxRealSenseContext::open(ofxRealSense2& realSense, string serial) {
 
     if(numConnected() >= numTotal()) {
         ofLogWarning("ofxRealSense2") << "no available devices found";
-        return false;
+        // return false;
     }
 
     // is the serial available?
     if(isConnected(serial)) {
         ofLogWarning("ofxRealSense2") << "device " << serial << " already connected";
-        return false;
+        // return false;
     }
 
     cout << "IN CONTEXT TRYING TO OPEN DEVICE BY SERIAL: " << serial << endl;

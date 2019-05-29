@@ -80,6 +80,7 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
         bool openFromFile(string filename);
 
+        void stopPipeline();
         void close();
 
         /// is the connection currently open?
