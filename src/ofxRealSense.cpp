@@ -145,9 +145,9 @@ bool ofxRealSense2::initDepth(int width, int height) {
         }
     }
 
-    color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0.f);
-    color_map.set_option(RS2_OPTION_VISUAL_PRESET, 3.f);
-    color_map.set_option(RS2_OPTION_COLOR_SCHEME, 2.f);
+//    color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 0.f);
+//    color_map.set_option(RS2_OPTION_VISUAL_PRESET, 3.f);
+//    color_map.set_option(RS2_OPTION_COLOR_SCHEME, 2.f);
 
     bGrabberInited = true;
     return bGrabberInited;
@@ -271,7 +271,7 @@ bool ofxRealSense2::open(int deviceIndex) {
     bGotDataVideo = false;
     bGotDataDepth = false;
     bFirstUpdate = true;
-
+    
     startThread(); // blocking, not verbose
 
     return true;
@@ -421,8 +421,16 @@ void ofxRealSense2::update() {
     }
 
     rs2::frame f;
+    
     if (filteredDepthQueue.poll_for_frame(&f)) { // Try to take the depth from the queue
-        depth = color_map.process(f);     // Colorize the depth frame with a color map
+        // original
+//        depth = color_map.process(f);     // Colorize the depth frame with a color map
+        
+        // temp hack to get greyscale w/o detailed filter controls
+        color_map.set_option(RS2_OPTION_HISTOGRAM_EQUALIZATION_ENABLED, 1.f);
+        color_map.set_option(RS2_OPTION_COLOR_SCHEME, 2.f);
+        depth = color_map.process(f); // Find and colorize the depth data
+        
         depthWidth = depth.as<rs2::video_frame>().get_width(); // dimensions change if we decimate
         depthHeight = depth.as<rs2::video_frame>().get_height();
     }
@@ -430,6 +438,30 @@ void ofxRealSense2::update() {
     if (depth) {
         if (depth.get_data()) {
 //          depthPixelsRaw.setFromPixels((unsigned char *)depth.get_data(), DEPTH_WIDTH, DEPTH_HEIGHT, OF_IMAGE_GRAYSCALE);
+            
+            // added for quick hack
+//            depthPixelsRaw.setFromPixels((unsigned char *)depth.get_data(), depthWidth, depthHeight, OF_IMAGE_COLOR);
+//            if (depthPixelsRaw.size() > 0)
+//            {
+//                if (depthPixelsRaw.getWidth() != depthPixelsRaw.getWidth())
+//                {
+//                    depthPixels.allocate(depthPixelsRaw.getWidth(), depthPixelsRaw.getHeight(), 1);
+//                }
+//
+//                unsigned char* pixelsF = depthPixelsRaw.getData();
+//                unsigned char* pixelsC = depthPixels.getData();
+//
+//                for (std::size_t i = 0; i < depthPixels.size(); i++)
+//                {
+//                    pixelsC[i] = ofMap(pixelsF[i], minDistance, maxDistance, 255, 0, true);
+//
+//                    if (pixelsC[i] == 255)
+//                    {
+//                        pixelsC[i] = 0;
+//                    }
+//                }
+//            }
+            
             depthPixels.setFromPixels((unsigned char *)depth.get_data(), depthWidth, depthHeight, OF_IMAGE_COLOR);
             depthTex.loadData(depthPixels);
             bIsFrameNewDepth = true;
@@ -497,7 +529,11 @@ ofPixels & ofxRealSense2::getDepthPixels() {
     return depthPixels;
 }
 
-ofShortPixels & ofxRealSense2::getRawDepthPixels() {
+//ofShortPixels & ofxRealSense2::getRawDepthPixels() {
+//    return depthPixelsRaw;
+//}
+
+ofPixels & ofxRealSense2::getRawDepthPixels() {
     return depthPixelsRaw;
 }
 
@@ -513,7 +549,11 @@ const ofPixels & ofxRealSense2::getDepthPixels() const {
     return depthPixels;
 }
 
-const ofShortPixels & ofxRealSense2::getRawDepthPixels() const {
+//const ofShortPixels & ofxRealSense2::getRawDepthPixels() const {
+//    return depthPixelsRaw;
+//}
+
+const ofPixels & ofxRealSense2::getRawDepthPixels() const {
     return depthPixelsRaw;
 }
 
@@ -880,7 +920,7 @@ void ofxRealSense2::threadedFunction() {
         // ofLog(OF_LOG_WARNING, "FILTERED WIDTH " + to_string(w));
         filteredDepthQueue.enqueue(filtered);
         // rawDepthQueue.enqueue(depth_frame);
-
+        
         // pass through video and ir frames unaltered
         if (bGrabVideo)
             videoQueue.enqueue(data.get_color_frame());

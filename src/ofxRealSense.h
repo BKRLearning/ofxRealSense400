@@ -20,14 +20,6 @@
     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
     THE SOFTWARE.
 
-    ----------------------------------------------------------------------------
-
-    This project uses libfreenect, copyrighted by the Open Kinect Project using
-    the Apache License v2. See the file "APACHE20" in libs/libfreenect.
-
-    See http://www.openkinect.org & https://github.com/OpenKinect/libfreenect
-    for documentation
-
 ==============================================================================*/
 #pragma once
 
@@ -142,8 +134,10 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
         /// get the pixels of the most recent depth frame
         const ofPixels & getDepthPixels() const;           ///< grayscale values
-        ofShortPixels & getRawDepthPixels();    ///< raw 11 bit values
-        const ofShortPixels & getRawDepthPixels() const;    ///< raw 11 bit values
+//        ofShortPixels & getRawDepthPixels();    ///< raw 11 bit values
+//        const ofShortPixels & getRawDepthPixels() const;    ///< raw 11 bit values
+        ofPixels & getRawDepthPixels();    ///< raw 11 bit values
+        const ofPixels & getRawDepthPixels() const;    ///< raw 11 bit values
 
         /// get the distance in millimeters to a given point as a float array
         ofFloatPixels & getDistancePixels();
@@ -227,6 +221,8 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
 
         int depthWidth;
         int depthHeight;
+        int  minDistance;
+        int maxDistance;
         float getDepthHeight() const;
         float getDepthWidth() const;
         int colorWidth;
@@ -282,7 +278,8 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         ofPixels videoPixels;
         ofPixels depthPixels;
         ofPixels infraredPixels;
-        ofShortPixels depthPixelsRaw;
+//        ofShortPixels depthPixelsRaw;
+        ofPixels depthPixelsRaw;
         ofFloatPixels distancePixels;
 
         float timeSinceOpen;
@@ -293,6 +290,7 @@ class ofxRealSense2 : public ofxBase3DVideo, protected ofThread {
         bool bFirstUpdate;
         int tryCount;
 
+        
 //    private:
 
         friend class ofxRealSenseContext;
